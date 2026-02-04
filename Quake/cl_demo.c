@@ -20,6 +20,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "quakedef.h"
+
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+#endif
 #include "sys.h"
 
 #include "bgmusic.h"
@@ -733,7 +737,13 @@ void CL_PlayDemo_f (void)
 	cls.state = ca_connected;
 
 	// get rid of the menu and/or console
-	key_dest = key_game;
+#ifdef USE_RMLUI
+	// Keep menu focus if RmlUI menus are active (demos can run in background).
+	if (!RmlUI_WantsMenuInput())
+#endif
+	{
+		key_dest = key_game;
+	}
 }
 
 /*
