@@ -24,6 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "in_sdl.h"
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+#endif
+
 #ifndef USE_SDL3
 
 extern cvar_t in_debugkeys;
@@ -132,12 +136,28 @@ void IN_SendKeyEvents (void)
 				vid.height = event.window.data2;
 				vid.restart_next_frame = true;
 				Cvar_FindVar ("scr_conscale")->callback (NULL);
+#ifdef USE_RMLUI
+				RmlUI_Resize (event.window.data1, event.window.data2);
+#endif
 			}
 			break;
 		case SDL_TEXTINPUT:
 			if (in_debugkeys.value)
 				IN_DebugTextEvent (&event);
 
+#ifdef USE_RMLUI
+			/* Forward text input to RmlUI when menu is active */
+			if (RmlUI_WantsMenuInput())
+			{
+				unsigned char *ch;
+				for (ch = (unsigned char *)event.text.text; *ch; ch++)
+				{
+					if ((*ch & ~0x7F) == 0)
+						RmlUI_CharEvent (*ch);
+				}
+				break;  /* Don't pass to Quake */
+			}
+#endif
 			// SDL2: We use SDL_TEXTINPUT for typing in the console / chat.
 			// SDL2 uses the local keyboard layout and handles modifiers
 			// (shift for uppercase, etc.) for us.
@@ -155,6 +175,27 @@ void IN_SendKeyEvents (void)
 			if (in_debugkeys.value)
 				IN_DebugKeyEvent (&event);
 
+#ifdef USE_RMLUI
+			/* Check if RmlUI is capturing a key for key binding */
+			if (RmlUI_IsCapturingKey() && down)
+			{
+				/* Get Quake key name and send to RmlUI */
+				int qkey = IN_SDL_ScancodeToQuakeKey (event.key.keysym.scancode);
+				const char* keyname = Key_KeynumToString(qkey);
+				RmlUI_OnKeyCaptured(qkey, keyname);
+				break;  /* Consumed by key capture */
+			}
+
+			/* Forward key events to RmlUI if it wants menu input
+			 * EXCEPT for escape key which is handled by keys.c for proper
+			 * menu stack navigation */
+			if (RmlUI_WantsMenuInput() && event.key.keysym.sym != SDLK_ESCAPE)
+			{
+				if (RmlUI_KeyEvent (event.key.keysym.sym, event.key.keysym.scancode, down, event.key.repeat))
+					break;  /* Consumed by RmlUI */
+			}
+#endif
+
 			// SDL2: we interpret the keyboard as the US layout, so keybindings
 			// are based on key position, not the label on the key cap.
 			key = IN_SDL_ScancodeToQuakeKey (event.key.keysym.scancode);
@@ -165,6 +206,16 @@ void IN_SendKeyEvents (void)
 
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
+#ifdef USE_RMLUI
+			/* When RmlUI wants input, it consumes all mouse button events. */
+			if (RmlUI_WantsMenuInput ())
+			{
+				if (in_debugkeys.value)
+					Con_Printf ("SDL mouse button %d state %d (RmlUI wants=1)\n", event.button.button, event.button.state);
+				RmlUI_MouseButton (event.button.button, event.button.state == SDL_PRESSED);
+				break;  /* Consumed by RmlUI */
+			}
+#endif
 			if (event.button.button < 1 || event.button.button > countof (buttonremap))
 			{
 				Con_Printf ("Ignored event for mouse button %d\n", event.button.button);
@@ -174,6 +225,14 @@ void IN_SendKeyEvents (void)
 			break;
 
 		case SDL_MOUSEWHEEL:
+#ifdef USE_RMLUI
+			/* When RmlUI wants input, it consumes all wheel events. */
+			if (RmlUI_WantsMenuInput ())
+			{
+				RmlUI_MouseScroll ((float)event.wheel.x, (float)event.wheel.y);
+				break;  /* Consumed by RmlUI */
+			}
+#endif
 			if (event.wheel.y > 0)
 			{
 				Key_Event (K_MWHEELUP, true);
@@ -187,6 +246,13 @@ void IN_SendKeyEvents (void)
 			break;
 
 		case SDL_MOUSEMOTION:
+#ifdef USE_RMLUI
+			/* Always update RmlUI cursor position for hover effects */
+			RmlUI_MouseMove (event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
+			/* Don't pass motion to game when RmlUI menu is active */
+			if (RmlUI_WantsMenuInput())
+				break;
+#endif
 			IN_MouseMotion (event.motion.xrel, event.motion.yrel);
 			break;
 
@@ -233,6 +299,12 @@ void IN_SendKeyEvents (void)
 
 static int SDLCALL IN_FilterMouseEvents (const SDL_Event *event)
 {
+#ifdef USE_RMLUI
+	/* Don't filter mouse events when RmlUI menu needs them */
+	if (RmlUI_WantsMenuInput())
+		return 1;
+#endif
+
 	switch (event->type)
 	{
 	case SDL_MOUSEMOTION:

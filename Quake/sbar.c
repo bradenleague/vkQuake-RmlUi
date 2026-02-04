@@ -68,6 +68,12 @@ static int hudtype;
 
 extern cvar_t scr_style;
 
+#ifdef USE_RMLUI
+extern cvar_t ui_use_rmlui_hud;
+#include "rmlui_bridge.h"
+static qboolean rmlui_hud_shown = false;
+#endif
+
 void Sbar_MiniDeathmatchOverlay (cb_context_t *cbx);
 void Sbar_DeathmatchOverlay (cb_context_t *cbx);
 void M_DrawPic (cb_context_t *cbx, int x, int y, qpic_t *pic);
@@ -99,6 +105,10 @@ void Sbar_ShowScores (void)
 	if (sb_showscores)
 		return;
 	sb_showscores = true;
+#ifdef USE_RMLUI
+	if (ui_use_rmlui_hud.value)
+		RmlUI_ShowScoreboard();
+#endif
 }
 
 /*
@@ -112,7 +122,18 @@ void Sbar_DontShowScores (void)
 {
 	Sbar_CSQCCommand ();
 	sb_showscores = false;
+#ifdef USE_RMLUI
+	if (ui_use_rmlui_hud.value)
+		RmlUI_HideScoreboard();
+#endif
 }
+
+#ifdef USE_RMLUI
+void Sbar_RmlUI_Reset(void)
+{
+	rmlui_hud_shown = false;
+}
+#endif
 
 qpic_t *Sbar_CheckPicFromWad (const char *name)
 {
@@ -1267,6 +1288,27 @@ void Sbar_Draw (cb_context_t *cbx)
 
 	if (scr_con_current == vid.height)
 		return; // console is full screen
+
+#ifdef USE_RMLUI
+	// If RmlUI HUD is enabled and we're in-game (world loaded, fully signed on, not a demo), show RmlUI HUD
+	if (ui_use_rmlui_hud.value && cl.worldmodel && cls.signon == SIGNONS && !cls.demoplayback)
+	{
+		if (!rmlui_hud_shown) {
+			RmlUI_ShowHUD(NULL);  // NULL = default hud_classic.rml
+			rmlui_hud_shown = true;
+		}
+		// Sync game state to RmlUI data model
+		RmlUI_SyncGameState(cl.stats, cl.items, cl.intermission, cl.gametype,
+		                    cl.levelname, cl.mapname, cl.time);
+		return;
+	}
+	else if (rmlui_hud_shown)
+	{
+		// Cvar was toggled off - hide RmlUI HUD
+		RmlUI_HideHUD();
+		rmlui_hud_shown = false;
+	}
+#endif
 
 	if ((scr_style.value < 1.0f) && cl.qcvm.extfuncs.CSQC_DrawHud && !qcvm)
 	{

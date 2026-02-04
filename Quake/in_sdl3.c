@@ -25,6 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "in_sdl.h"
 
 #ifdef USE_SDL3
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+#endif
 
 extern cvar_t in_debugkeys;
 
@@ -153,6 +156,26 @@ void IN_SendKeyEvents (void)
 			if (in_debugkeys.value)
 				IN_DebugKeyEvent (&event);
 
+#ifdef USE_RMLUI
+			/* Check if RmlUI is capturing a key for key binding */
+			if (RmlUI_IsCapturingKey() && down)
+			{
+				int qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
+				const char* keyname = Key_KeynumToString(qkey);
+				RmlUI_OnKeyCaptured(qkey, keyname);
+				break;  /* Consumed by key capture */
+			}
+
+			/* Forward key events to RmlUI if it wants menu input
+			 * EXCEPT for escape key which is handled by keys.c for proper
+			 * menu stack navigation */
+			if (RmlUI_WantsMenuInput() && event.key.key != SDLK_ESCAPE)
+			{
+				if (RmlUI_KeyEvent (event.key.key, event.key.scancode, down, event.key.repeat))
+					break;  /* Consumed by RmlUI */
+			}
+#endif
+
 			// We interpret the keyboard as the US layout, so keybindings
 			// are based on key position, not the label on the key cap.
 			key = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
@@ -163,6 +186,15 @@ void IN_SendKeyEvents (void)
 
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
+#ifdef USE_RMLUI
+			if (RmlUI_WantsMenuInput ())
+			{
+				if (in_debugkeys.value)
+					Con_Printf ("SDL mouse button %d state %d (RmlUI wants=1)\n", event.button.button, event.button.down);
+				RmlUI_MouseButton (event.button.button, event.button.down);
+				break;  /* Consumed by RmlUI */
+			}
+#endif
 			if (event.button.button < 1 || event.button.button > countof (buttonremap))
 			{
 				Con_Printf ("Ignored event for mouse button %d\n", event.button.button);
@@ -172,6 +204,13 @@ void IN_SendKeyEvents (void)
 			break;
 
 		case SDL_EVENT_MOUSE_WHEEL:
+#ifdef USE_RMLUI
+			if (RmlUI_WantsMenuInput ())
+			{
+				RmlUI_MouseScroll ((float)event.wheel.x, (float)event.wheel.y);
+				break;  /* Consumed by RmlUI */
+			}
+#endif
 			if (event.wheel.y > 0)
 			{
 				Key_Event (K_MWHEELUP, true);
@@ -185,6 +224,11 @@ void IN_SendKeyEvents (void)
 			break;
 
 		case SDL_EVENT_MOUSE_MOTION:
+#ifdef USE_RMLUI
+			RmlUI_MouseMove (event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
+			if (RmlUI_WantsMenuInput())
+				break;
+#endif
 			IN_MouseMotion (event.motion.xrel, event.motion.yrel);
 			break;
 
@@ -231,6 +275,12 @@ void IN_SendKeyEvents (void)
 
 static bool SDLCALL IN_FilterMouseEvents (const SDL_Event *event)
 {
+#ifdef USE_RMLUI
+	/* Don't filter mouse events when RmlUI menu needs them */
+	if (RmlUI_WantsMenuInput())
+		return true;
+#endif
+
 	switch (event->type)
 	{
 	case SDL_EVENT_MOUSE_MOTION:

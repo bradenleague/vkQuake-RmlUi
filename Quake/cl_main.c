@@ -23,6 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "bgmusic.h"
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+#endif
 
 // we need to declare some mouse variables here, because the menu system
 // references them even when on a unix system.
@@ -40,6 +43,7 @@ cvar_t lookspring = {"lookspring", "0", CVAR_NONE};
 cvar_t lookstrafe = {"lookstrafe", "0", CVAR_NONE};
 cvar_t sensitivity = {"sensitivity", "3", CVAR_ARCHIVE};
 
+cvar_t m_filter = {"m_filter", "0", CVAR_ARCHIVE};
 cvar_t m_pitch = {"m_pitch", "0.022", CVAR_ARCHIVE};
 cvar_t m_yaw = {"m_yaw", "0.022", CVAR_ARCHIVE};
 cvar_t m_forward = {"m_forward", "1", CVAR_ARCHIVE};
@@ -168,6 +172,21 @@ void CL_Disconnect (void)
 	S_StopAllSounds (true, false);
 	BGM_Stop ();
 	CDAudio_Stop ();
+
+#ifdef USE_RMLUI
+	// Clean up RmlUI HUD overlays on disconnect
+	{
+		extern cvar_t ui_use_rmlui_hud;
+		extern void Sbar_RmlUI_Reset(void);
+		if (ui_use_rmlui_hud.value)
+		{
+			RmlUI_HideHUD();
+			RmlUI_HideScoreboard();
+			RmlUI_HideIntermission();
+		}
+		Sbar_RmlUI_Reset();
+	}
+#endif
 
 	// if running a local server, shut it down
 	if (cls.demoplayback)
@@ -300,11 +319,18 @@ void CL_NextDemo (void)
 {
 	char str[1024];
 
+	Con_Printf ("CL_NextDemo: demonum=%d\n", cls.demonum);
+
 	if (cls.demonum == -1)
+	{
+		Con_Printf ("CL_NextDemo: demonum is -1, not playing demos\n");
 		return; // don't play demos
+	}
 
 	if (!cls.demos[cls.demonum][0] || cls.demonum == MAX_DEMOS)
 	{
+		Con_Printf ("CL_NextDemo: wrapping to demo 0 (was %d, demos[demonum]='%s')\n",
+			cls.demonum, cls.demos[cls.demonum]);
 		cls.demonum = 0;
 		if (!cls.demos[cls.demonum][0])
 		{
@@ -318,6 +344,7 @@ void CL_NextDemo (void)
 	SCR_BeginLoadingPlaque ();
 
 	q_snprintf (str, sizeof (str), "playdemo %s\n", cls.demos[cls.demonum]);
+	Con_Printf ("CL_NextDemo: playing '%s'\n", cls.demos[cls.demonum]);
 	Cbuf_InsertText (str);
 	cls.demonum++;
 }
@@ -1221,6 +1248,7 @@ void CL_Init (void)
 	Cvar_RegisterVariable (&lookspring);
 	Cvar_RegisterVariable (&lookstrafe);
 	Cvar_RegisterVariable (&sensitivity);
+	Cvar_RegisterVariable (&m_filter);
 
 	Cvar_RegisterVariable (&cl_alwaysrun);
 

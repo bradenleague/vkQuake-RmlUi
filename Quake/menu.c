@@ -23,6 +23,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "bgmusic.h"
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+extern cvar_t ui_use_rmlui_menus;
+#endif
+
 void (*vid_menucmdfn) (void); // johnfitz
 void (*vid_menukeyfn) (int key);
 
@@ -452,6 +457,35 @@ int m_save_demonum;
 
 /*
 ================
+M_RestoreDemoLoop
+
+Called when RmlUI menus are fully closed to restore demo playback.
+This mirrors what M_Main_Key does when exiting the main menu via escape.
+================
+*/
+void M_RestoreDemoLoop (void)
+{
+	Con_Printf ("M_RestoreDemoLoop: m_save_demonum=%d, cls.demonum=%d\n", m_save_demonum, cls.demonum);
+	cls.demonum = m_save_demonum;
+	if (!fitzmode && !cl_startdemos.value)
+	{
+		Con_Printf ("M_RestoreDemoLoop: cl_startdemos disabled, not restoring\n");
+		return;
+	}
+	if (cls.demonum != -1 && !cls.demoplayback && cls.state != ca_connected)
+	{
+		Con_Printf ("M_RestoreDemoLoop: calling CL_NextDemo\n");
+		CL_NextDemo ();
+	}
+	else
+	{
+		Con_Printf ("M_RestoreDemoLoop: not calling CL_NextDemo (demonum=%d, demoplayback=%d, state=%d)\n",
+			cls.demonum, cls.demoplayback, cls.state);
+	}
+}
+
+/*
+================
 M_ToggleMenu_f
 ================
 */
@@ -612,6 +646,20 @@ void M_Mouse_UpdateCursor (int *cursor, int left, int right, int top, int item_h
 
 void M_Menu_Main_f (void)
 {
+#ifdef USE_RMLUI
+	// If RmlUI menus are enabled, delegate to RmlUI
+	// Note: Unlike native menus, we don't set cls.demonum = -1 here.
+	// This allows demos to continue cycling in the background while
+	// the menu is displayed. The demo loop will keep running.
+	if (ui_use_rmlui_menus.value)
+	{
+		IN_Deactivate (true);
+		key_dest = key_menu;
+		RmlUI_PushMenu("ui/rml/menus/main_menu.rml");
+		return;
+	}
+#endif
+
 	M_MenuChanged ();
 	if (key_dest != key_menu)
 	{
@@ -2176,15 +2224,34 @@ enum
 	OPT_VIDEO,
 	OPT_GRAPHICS,
 	OPT_SOUND,
+#ifdef USE_RMLUI
+	OPT_UI,
+#endif
 	OPT_PADDING,
 	OPT_DEFAULTS,
 	OPTIONS_ITEMS
 };
 
+#ifdef USE_RMLUI
+#define OPTIONS_LAST_SELECTABLE OPT_UI
+#else
+#define OPTIONS_LAST_SELECTABLE OPT_SOUND
+#endif
+
 static int options_cursor;
 
 void M_Menu_Options_f (void)
 {
+#ifdef USE_RMLUI
+	if (ui_use_rmlui_menus.value)
+	{
+		IN_Deactivate (true);
+		key_dest = key_menu;
+		RmlUI_PushMenu("ui/rml/menus/options.rml");
+		return;
+	}
+#endif
+
 	M_MenuChanged ();
 	IN_Deactivate (true);
 	key_dest = key_menu;
@@ -2206,12 +2273,16 @@ static void M_Options_Draw (cb_context_t *cbx)
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_VIDEO, "Video");
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_GRAPHICS, "Graphics");
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_SOUND, "Sound");
+#ifdef USE_RMLUI
+	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_UI, "Modern UI");
+	M_DrawCheckbox (cbx, MENU_VALUE_X, top + CHARACTER_SIZE * OPT_UI, ui_use_rmlui_menus.value);
+#endif
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_DEFAULTS, "Reset config");
 
 	// cursor
 	M_Mouse_UpdateListCursor (&options_cursor, MENU_LABEL_X, 320, top, CHARACTER_SIZE, OPTIONS_ITEMS, 0);
 	if (options_cursor == OPT_PADDING)
-		options_cursor = OPT_SOUND;
+		options_cursor = OPTIONS_LAST_SELECTABLE;
 	Draw_Character (cbx, MENU_CURSOR_X, top + options_cursor * CHARACTER_SIZE, 12 + ((int)(realtime * 4) & 1));
 }
 
@@ -2239,6 +2310,16 @@ void M_Options_Key (int k)
 		case OPT_CONTROLS:
 			M_Menu_Keys_f ();
 			break;
+#ifdef USE_RMLUI
+		case OPT_UI:
+			Cvar_SetValue ("ui_use_rmlui_menus", ui_use_rmlui_menus.value ? 0 : 1);
+			if (ui_use_rmlui_menus.value)
+			{
+				M_Menu_Main_f ();
+				return;
+			}
+			break;
+#endif
 		case OPT_DEFAULTS:
 			if (SCR_ModalMessage (
 					"This will reset all controls\n"

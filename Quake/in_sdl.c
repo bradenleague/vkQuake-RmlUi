@@ -552,6 +552,8 @@ void IN_MouseMove (usercmd_t *cmd)
 {
 	float dmx, dmy;
 	float sens;
+	static float last_dmx = 0.0f;
+	static float last_dmy = 0.0f;
 
 	sens = tan (DEG2RAD (r_refdef.basefov) * 0.5f) / tan (DEG2RAD (scr_fov.value) * 0.5f);
 	sens *= sensitivity.value;
@@ -564,7 +566,20 @@ void IN_MouseMove (usercmd_t *cmd)
 
 	// do pause check after resetting total_d* so mouse movements during pause don't accumulate
 	if (cl.paused || key_dest != key_game)
+	{
+		last_dmx = 0.0f;
+		last_dmy = 0.0f;
 		return;
+	}
+
+	if (m_filter.value)
+	{
+		dmx = (dmx + last_dmx) * 0.5f;
+		dmy = (dmy + last_dmy) * 0.5f;
+	}
+
+	last_dmx = dmx;
+	last_dmy = dmy;
 
 	if ((in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1)))
 		cmd->sidemove_accumulator += m_side.value * dmx;

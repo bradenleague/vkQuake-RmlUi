@@ -24,6 +24,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "arch_def.h"
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+extern cvar_t ui_use_rmlui_menus;
+#endif
+
 /* key up events are sent even if in console mode */
 
 #define HISTORY_FILE_NAME "history.txt"
@@ -995,6 +1000,21 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 		if (!down)
 			return;
 
+#ifdef USE_RMLUI
+		// Let RmlUI handle escape first if it has an active menu
+		if (RmlUI_WantsMenuInput())
+		{
+			RmlUI_HandleEscape();
+			// If RmlUI no longer wants input, return control to game
+			if (!RmlUI_WantsMenuInput())
+			{
+				IN_Activate();
+				key_dest = key_game;
+			}
+			return;
+		}
+#endif
+
 		if (keydown[K_SHIFT])
 		{
 			Con_ToggleConsole_f ();
@@ -1011,7 +1031,23 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 			break;
 		case key_game:
 		case key_console:
-			M_ToggleMenu_f ();
+#ifdef USE_RMLUI
+			/* If RmlUI menus are enabled, use them instead of Quake menus */
+			if (ui_use_rmlui_menus.value)
+			{
+				IN_Deactivate (true);  /* Always free cursor for RmlUI menus */
+				key_dest = key_menu;
+				/* Show pause menu if in-game, main menu otherwise */
+				if (sv.active)
+					RmlUI_PushMenu ("ui/rml/menus/pause_menu.rml");
+				else
+					RmlUI_PushMenu ("ui/rml/menus/main_menu.rml");
+			}
+			else
+#endif
+			{
+				M_ToggleMenu_f ();
+			}
 			break;
 		default:
 			Sys_Error ("Bad key_dest");

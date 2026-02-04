@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "arch_def.h"
 #include "quakedef.h"
+#include "tasks.h"
 
 #include <sys/types.h>
 #include <errno.h>
@@ -256,12 +257,21 @@ void Sys_Error (const char *error, ...)
 	va_end (argptr);
 
 	fputs (errortxt1, stderr);
-	Host_Shutdown ();
 	fputs (errortxt2, stderr);
 	fputs (text, stderr);
 	fputs ("\n\n", stderr);
-	if (!isDedicated)
-		PL_ErrorDialog (text);
+	fflush (stderr);
+
+	/* Host_Shutdown cannot be called from worker threads - it's not thread-safe
+	 * and asserts that it's called from the main thread. If we're in a worker
+	 * thread, just exit immediately. The main thread will be woken up by the
+	 * task system and the process will terminate. */
+	if (!Tasks_IsWorker ())
+	{
+		Host_Shutdown ();
+		if (!isDedicated)
+			PL_ErrorDialog (text);
+	}
 
 	exit (1);
 }

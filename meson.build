@@ -1,4 +1,4 @@
-project('vkquake', 'c', default_options : ['c_std=gnu11', 'buildtype=release'])
+project('vkquake', 'c', 'cpp', default_options : ['c_std=gnu11', 'cpp_std=c++17', 'buildtype=release'])
 
 cc = meson.get_compiler('c')
 
@@ -280,4 +280,94 @@ incdirs = [
     'Quake/mimalloc',
 ]
 
-executable('vkquake', [srcs, shaders_c], dependencies : deps, include_directories : incdirs, c_args : cflags, c_pch: ['Quake/quakedef.h', 'Quake/quakedef.c'])
+cxx = meson.get_compiler('cpp')
+cxxflags = ['-Wall', '-std=c++17']
+
+# RmlUI integration (optional)
+use_rmlui = get_option('use_rmlui')
+rmlui_srcs = []
+if use_rmlui
+    cflags += '-DUSE_RMLUI'
+    cxxflags += '-DUSE_RMLUI'
+
+    # RmlUI sources from tatoosh library (layered architecture)
+    rmlui_srcs = files(
+        # Interface layer (C API)
+        '../rmlui/interface/ui_manager.cpp',
+        # Application layer
+        '../rmlui/application/document_manager.cpp',
+        '../rmlui/application/menu_stack.cpp',
+        # Infrastructure layer
+        '../rmlui/infrastructure/render_interface_vk.cpp',
+        '../rmlui/infrastructure/system_interface.cpp',
+        '../rmlui/infrastructure/game_data_model.cpp',
+        '../rmlui/infrastructure/cvar_binding.cpp',
+        '../rmlui/infrastructure/menu_event_handler.cpp',
+        '../rmlui/infrastructure/stb_image_impl.c',
+        # Infrastructure layer - port implementations
+        '../rmlui/infrastructure/quake_cvar_provider.cpp',
+        '../rmlui/infrastructure/quake_command_executor.cpp',
+        '../rmlui/infrastructure/quake_logger.cpp',
+        # Engine bridge
+        'Quake/rmlui_bridge.cpp',
+    )
+
+    # Add RmlUI shaders to the shaders list
+    shaders += [
+        'Shaders/rmlui.vert',
+        'Shaders/rmlui.frag',
+        'Shaders/rmlui_notex.frag',
+    ]
+
+    # RmlUI include directories - use include_directories() for proper handling
+    rmlui_incdir = include_directories(
+        '../external/rmlui/Include',
+        '../rmlui',
+        '../rmlui/interface',
+        '../rmlui/application',
+        '../rmlui/domain',
+        '../rmlui/domain/ports',
+        '../rmlui/infrastructure',
+    )
+
+    # Find RmlUI and freetype dependencies
+    # RmlUI can be built separately via CMake and linked as a library
+    # Or we can use pkg-config if installed system-wide
+    rmlui_dep = dependency('rmlui', required : false)
+    if rmlui_dep.found()
+        deps += rmlui_dep
+    else
+        # Try to find pre-built library from CMake build
+        # Use meson.project_source_root() for absolute paths
+        rmlui_lib_dirs = [
+            join_paths(meson.project_source_root(), '..', 'external', 'rmlui', 'build'),
+            join_paths(meson.project_source_root(), '..', 'build'),
+            join_paths(meson.project_source_root(), '..', 'build_test'),
+            join_paths(meson.project_source_root(), '..', 'cmake-build'),
+        ]
+        rmlui_lib = cxx.find_library('rmlui', required : false, dirs : rmlui_lib_dirs)
+        rmlui_debugger_lib = cxx.find_library('rmlui_debugger', required : false, dirs : rmlui_lib_dirs)
+        if rmlui_lib.found()
+            deps += rmlui_lib
+            if rmlui_debugger_lib.found()
+                deps += rmlui_debugger_lib
+            endif
+        else
+            warning('RmlUI library not found. Build external/rmlui first with CMake.')
+        endif
+    endif
+
+    freetype_dep = dependency('freetype2', required : true)
+    deps += freetype_dep
+
+    message('RmlUI support: enabled')
+else
+    message('RmlUI support: disabled')
+endif
+
+# Build executable - include RmlUI directories if enabled
+if use_rmlui
+    executable('vkquake', [srcs, shaders_c, rmlui_srcs], dependencies : deps, include_directories : [incdirs, rmlui_incdir], c_args : cflags, cpp_args : cxxflags, c_pch: ['Quake/quakedef.h', 'Quake/quakedef.c'])
+else
+    executable('vkquake', [srcs, shaders_c], dependencies : deps, include_directories : incdirs, c_args : cflags, c_pch: ['Quake/quakedef.h', 'Quake/quakedef.c'])
+endif

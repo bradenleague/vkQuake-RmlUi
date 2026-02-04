@@ -30,6 +30,111 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gl_heap.h"
 #endif
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+
+/* Cvars to enable RmlUI components */
+cvar_t ui_use_rmlui = {"ui_use_rmlui", "0", CVAR_ARCHIVE};        /* Master switch */
+cvar_t ui_use_rmlui_hud = {"ui_use_rmlui_hud", "0", CVAR_ARCHIVE};     /* Use RmlUI HUD */
+cvar_t ui_use_rmlui_menus = {"ui_use_rmlui_menus", "0", CVAR_ARCHIVE}; /* Use RmlUI menus */
+
+static qboolean ui_syncing_cvars = false;
+
+static void UI_CloseMenu_f (void);
+
+static void UI_MasterCvarChanged (cvar_t *var)
+{
+	if (ui_syncing_cvars)
+		return;
+	ui_syncing_cvars = true;
+	Cvar_SetValue ("ui_use_rmlui_menus", var->value ? 1 : 0);
+	Cvar_SetValue ("ui_use_rmlui_hud", var->value ? 1 : 0);
+	ui_syncing_cvars = false;
+}
+
+static void UI_ComponentCvarChanged (cvar_t *var)
+{
+	(void)var;
+	if (ui_syncing_cvars)
+		return;
+	ui_syncing_cvars = true;
+	Cvar_SetValue ("ui_use_rmlui", (ui_use_rmlui_menus.value || ui_use_rmlui_hud.value) ? 1 : 0);
+	ui_syncing_cvars = false;
+}
+
+/* Console commands for RmlUI */
+static void UI_Toggle_f (void)
+{
+	/* Toggle the menu stack (more useful than toggling visibility with no menus open). */
+	if (RmlUI_WantsMenuInput ())
+		UI_CloseMenu_f ();
+	else
+	{
+		RmlUI_SetVisible (1);
+		IN_Deactivate (true);
+		key_dest = key_menu;
+		RmlUI_PushMenu ("ui/rml/menus/main_menu.rml");
+	}
+}
+
+static void UI_Show_f (void)
+{
+	/* Alias for opening the default menu. */
+	RmlUI_SetVisible (1);
+	IN_Deactivate (true);
+	key_dest = key_menu;
+	RmlUI_PushMenu ("ui/rml/menus/main_menu.rml");
+}
+
+static void UI_Hide_f (void)
+{
+	/* Alias for closing menus. Don't force-hide if HUD is visible. */
+	UI_CloseMenu_f ();
+}
+
+static void UI_Debugger_f (void)
+{
+	RmlUI_ToggleDebugger ();
+	Con_Printf ("RmlUI debugger toggled\n");
+}
+
+/* Open an RmlUI menu - sets key_dest and captures mouse */
+static void UI_Menu_f (void)
+{
+	const char *menu_path;
+
+	if (Cmd_Argc () < 2)
+		menu_path = "ui/rml/menus/main_menu.rml";  /* Default menu */
+	else
+		menu_path = Cmd_Argv (1);
+
+	/* Release mouse and set menu mode */
+	RmlUI_SetVisible (1);
+	IN_Deactivate (true);
+	key_dest = key_menu;
+
+	/* Push the menu onto RmlUI's stack */
+	RmlUI_PushMenu (menu_path);
+}
+
+/* Close all RmlUI menus and return to game */
+static void UI_CloseMenu_f (void)
+{
+	/* Pop all menus */
+	while (RmlUI_WantsMenuInput ())
+		RmlUI_HandleEscape ();
+
+	/* Restore game input */
+	if (!RmlUI_WantsMenuInput ())
+	{
+		IN_Activate ();
+		key_dest = key_game;
+		if (!RmlUI_IsHUDVisible ())
+			RmlUI_SetVisible (0);
+	}
+}
+#endif
+
 /*
 
 A server can allways be started, even if the system started out as a client
@@ -194,6 +299,7 @@ void Host_EndGame (const char *message, ...)
 	if (cls.state == ca_dedicated)
 		Sys_Error ("Host_EndGame: %s\n", string); // dedicated servers exit
 
+	Con_Printf ("Host_EndGame: demonum=%d, timedemo=%d\n", cls.demonum, cls.timedemo);
 	if (cls.demonum != -1 && !cls.timedemo)
 		CL_NextDemo ();
 	else
@@ -1101,7 +1207,30 @@ void Host_Init (void)
 		Modlist_Init ();   // johnfitz
 		DemoList_Init ();  // ericw
 		SaveList_Init ();
+#ifdef USE_RMLUI
+		/* Initialize RmlUI core BEFORE VID_Init so the render interface exists
+		 * when RmlUI_InitVulkan is called from GL_InitDevice */
+		RmlUI_Init (1280, 720, com_basedir);  /* Initial size, will resize after VID_Init */
+		/* Register cvars and console commands for RmlUI */
+		Cvar_RegisterVariable (&ui_use_rmlui);
+		Cvar_RegisterVariable (&ui_use_rmlui_hud);
+		Cvar_RegisterVariable (&ui_use_rmlui_menus);
+		Cvar_SetCallback (&ui_use_rmlui, UI_MasterCvarChanged);
+		Cvar_SetCallback (&ui_use_rmlui_hud, UI_ComponentCvarChanged);
+		Cvar_SetCallback (&ui_use_rmlui_menus, UI_ComponentCvarChanged);
+		Cmd_AddCommand ("ui_toggle", UI_Toggle_f);
+		Cmd_AddCommand ("ui_show", UI_Show_f);
+		Cmd_AddCommand ("ui_hide", UI_Hide_f);
+		Cmd_AddCommand ("ui_debugger", UI_Debugger_f);
+		Cmd_AddCommand ("ui_debuger", UI_Debugger_f);
+		Cmd_AddCommand ("ui_menu", UI_Menu_f);
+		Cmd_AddCommand ("ui_closemenu", UI_CloseMenu_f);
+#endif
 		VID_Init ();
+#ifdef USE_RMLUI
+		/* Resize RmlUI context to actual window size */
+		RmlUI_Resize (vid.width, vid.height);
+#endif
 		IN_Init ();
 		TexMgr_Init (); // johnfitz
 		Draw_Init ();
@@ -1175,6 +1304,9 @@ void Host_Shutdown (void)
 		BGM_Shutdown ();
 		CDAudio_Shutdown ();
 		S_Shutdown ();
+#ifdef USE_RMLUI
+		RmlUI_Shutdown ();
+#endif
 		IN_Shutdown ();
 		VID_Shutdown ();
 	}

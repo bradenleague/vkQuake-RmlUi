@@ -29,6 +29,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <setjmp.h>
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+extern cvar_t ui_use_rmlui_hud;
+#endif
+
 /*
 
 background clear
@@ -392,7 +397,11 @@ static void SCR_CalcRefdef (void)
 	scale = CLAMP (1.0, scr_sbarscale.value, (float)glwidth / 320.0);
 
 	if ((size >= 120) || cl.intermission || (scr_sbaralpha.value < 1) || ((scr_style.value < 1.0f) && cl.qcvm.extfuncs.CSQC_DrawHud) ||
-		(scr_style.value >= 2.0f)) // johnfitz -- scr_sbaralpha.value. Spike -- simple csqc assumes fullscreen video the same way.
+		(scr_style.value >= 2.0f) // johnfitz -- scr_sbaralpha.value. Spike -- simple csqc assumes fullscreen video the same way.
+#ifdef USE_RMLUI
+		|| ui_use_rmlui_hud.value // RmlUI HUD renders in its own pass, no need for sbar space
+#endif
+		)
 		sb_lines = 0;
 	else if (size >= 110)
 		sb_lines = 24 * scale;
@@ -1164,6 +1173,16 @@ static void SCR_DrawGUI (void *unused)
 	if (use_mutex)
 		SDL_UnlockMutex (draw_qcvm_mutex);
 
+#ifdef USE_RMLUI
+	/* Render RmlUI overlay on top of Quake GUI */
+	R_BeginDebugUtilsLabel (cbx, "RmlUI");
+	RmlUI_BeginFrame (cbx->cb, vid.width, vid.height);
+	RmlUI_Update (host_frametime);
+	RmlUI_Render ();
+	RmlUI_EndFrame ();
+	R_EndDebugUtilsLabel (cbx);
+#endif
+
 	R_EndDebugUtilsLabel (cbx);
 }
 
@@ -1226,6 +1245,13 @@ void SCR_UpdateScreen (qboolean use_tasks)
 
 	if (vid.recalc_refdef)
 		SCR_CalcRefdef ();
+
+#ifdef USE_RMLUI
+	// Process pending RmlUI operations on the main thread BEFORE any rendering
+	// tasks are created. This prevents race conditions between UI state changes
+	// and rendering on worker threads.
+	RmlUI_ProcessPending ();
+#endif
 
 	// decide on the height of the console
 	con_forcedup = !cl.worldmodel || cls.signon != SIGNONS;

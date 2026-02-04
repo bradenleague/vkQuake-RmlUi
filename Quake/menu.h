@@ -72,6 +72,7 @@ void	 M_MenuChanged ();
 void M_Menu_Main_f (void);
 void M_Menu_Options_f (void);
 void M_Menu_Quit_f (void);
+void M_RestoreDemoLoop (void);
 
 void M_Print (cb_context_t *cbx, int cx, int cy, const char *str);
 

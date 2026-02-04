@@ -31,6 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "palette.h"
 #include "menu.h"
 
+#ifdef USE_RMLUI
+#include "rmlui_bridge.h"
+#endif
+
 #ifdef USE_SDL3
 #include <SDL3/SDL_vulkan.h>
 #else
@@ -2408,6 +2412,36 @@ static void GL_CreateRenderResources (void)
 	render_resources_created = true;
 
 	GL_UpdateDescriptorSets ();
+
+#ifdef USE_RMLUI
+	/* Initialize/reinitialize RmlUI Vulkan renderer with current render passes.
+	 * This is called every time render resources are created/recreated to ensure
+	 * RmlUI's pipelines reference the current render pass. */
+	{
+		cb_context_t *gui_cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
+		rmlui_vulkan_config_t rmlui_config = {0};
+		rmlui_config.device = vulkan_globals.device;
+		rmlui_config.physical_device = vulkan_physical_device;
+		rmlui_config.graphics_queue = vulkan_globals.queue;
+		rmlui_config.queue_family_index = vulkan_globals.gfx_queue_family_index;
+		rmlui_config.color_format = vulkan_globals.color_format;
+		rmlui_config.depth_format = vulkan_globals.depth_format;
+		rmlui_config.sample_count = vulkan_globals.sample_count;
+		rmlui_config.render_pass = gui_cbx->render_pass;
+		rmlui_config.subpass = gui_cbx->subpass;
+		rmlui_config.memory_properties = vulkan_globals.memory_properties;
+		rmlui_config.cmd_bind_pipeline = vulkan_globals.vk_cmd_bind_pipeline;
+		rmlui_config.cmd_bind_descriptor_sets = vulkan_globals.vk_cmd_bind_descriptor_sets;
+		rmlui_config.cmd_bind_vertex_buffers = vkCmdBindVertexBuffers;
+		rmlui_config.cmd_bind_index_buffer = vkCmdBindIndexBuffer;
+		rmlui_config.cmd_draw = vkCmdDraw;
+		rmlui_config.cmd_draw_indexed = vkCmdDrawIndexed;
+		rmlui_config.cmd_push_constants = vulkan_globals.vk_cmd_push_constants;
+		rmlui_config.cmd_set_scissor = vkCmdSetScissor;
+		rmlui_config.cmd_set_viewport = vkCmdSetViewport;
+		RmlUI_InitVulkan (&rmlui_config);
+	}
+#endif
 }
 
 /*
@@ -2518,6 +2552,9 @@ void GL_BeginRenderingTask (void *unused)
 	R_CollectDynamicBufferGarbage ();
 	R_CollectMeshBufferGarbage ();
 	TexMgr_CollectGarbage ();
+#ifdef USE_RMLUI
+	RmlUI_CollectGarbage ();
+#endif
 
 	for (int pcbx_index = 0; pcbx_index < PCBX_NUM; ++pcbx_index)
 	{
@@ -3185,7 +3222,11 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 			vid.restart_next_frame = true;
 		}
 		else if (err != VK_SUCCESS)
-			Sys_Error ("vkQueuePresentKHR failed");
+		{
+			// Try to recover by restarting the swapchain for any unexpected error
+			Con_Printf ("vkQueuePresentKHR failed with error %d, attempting recovery\n", (int)err);
+			vid.restart_next_frame = true;
+		}
 
 		if (err == VK_SUCCESS || err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR)
 			num_images_acquired -= 1;
@@ -3651,6 +3692,7 @@ void VID_Init (void)
 	R_CreatePipelineLayouts ();
 	R_CreatePaletteOctreeBuffers (palette_octree_colors, NUM_PALETTE_OCTREE_COLORS, palette_octree_nodes, NUM_PALETTE_OCTREE_NODES);
 	// GL_CreateRenderResources ();
+	// Note: RmlUI Vulkan init moved to GL_CreateRenderResources() after render passes exist
 
 	// johnfitz -- removed code creating "glquake" subdirectory
 
