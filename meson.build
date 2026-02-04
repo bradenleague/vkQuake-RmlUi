@@ -85,6 +85,27 @@ run_mkpak = custom_target('run-mkpak',
   depfile : 'vkquake.pak.d',
   command: mkpak_command)
 
+# Copy UI assets into the build output for packaging/running
+py = import('python').find_installation()
+ui_src = join_paths(meson.project_source_root(), '..', 'ui')
+ui_dst = join_paths(meson.project_build_root(), 'ui')
+copy_ui_script = '''
+import os, shutil, sys
+src, dst, out = sys.argv[1], sys.argv[2], sys.argv[3]
+if not os.path.isdir(src):
+    print('UI source not found: ' + src, file=sys.stderr)
+    sys.exit(1)
+if os.path.exists(dst):
+    shutil.rmtree(dst)
+shutil.copytree(src, dst)
+with open(out, 'w') as f:
+    f.write('ok')
+'''
+copy_ui_assets = custom_target('copy-ui-assets',
+  output : 'ui_assets.stamp',
+  command : [py, '-c', copy_ui_script, ui_src, ui_dst, '@OUTPUT@'],
+  build_by_default : true)
+
 # Write the embedded pak into the build dir so Meson can track it.
 bintoc_compress_command = [bintoc, '-c', '@INPUT@', 'vkquake.pak', '@OUTPUT@']
 
