@@ -118,6 +118,8 @@ cvar_t		  vid_fsaa = {"vid_fsaa", "0", CVAR_ARCHIVE};
 cvar_t		  vid_fsaamode = {"vid_fsaamode", "0", CVAR_ARCHIVE};
 cvar_t		  vid_gamma = {"gamma", "0.9", CVAR_ARCHIVE};		// johnfitz -- moved here from view.c
 cvar_t		  vid_contrast = {"contrast", "1.4", CVAR_ARCHIVE}; // QuakeSpasm, MarkV
+cvar_t		  r_ui_warp = {"r_ui_warp", "-0.1", CVAR_NONE};
+cvar_t		  r_ui_chromatic = {"r_ui_chromatic", "0.01", CVAR_NONE};
 cvar_t		  r_usesops = {"r_usesops", "1", CVAR_ARCHIVE};		// johnfitz
 #if defined(_DEBUG)
 static cvar_t r_raydebug = {"r_raydebug", "0", 0};
@@ -143,6 +145,8 @@ static VkFramebuffer	main_framebuffers[NUM_COLOR_BUFFERS];
 static VkSemaphore		image_aquired_semaphores[DOUBLE_BUFFERED];
 static VkSemaphore		draw_complete_semaphores[DOUBLE_BUFFERED];
 static VkFramebuffer	ui_framebuffers[MAX_SWAP_CHAIN_IMAGES];
+static VkFramebuffer	postprocess_framebuffers[MAX_SWAP_CHAIN_IMAGES];
+static VkSampler		postprocess_sampler;
 static VkImage			swapchain_images[MAX_SWAP_CHAIN_IMAGES];
 static VkImageView		swapchain_images_views[MAX_SWAP_CHAIN_IMAGES];
 static VkImage			depth_buffer;
@@ -154,6 +158,7 @@ static VkImage			msaa_color_buffer;
 static vulkan_memory_t	msaa_color_buffer_memory;
 static VkImageView		msaa_color_buffer_view;
 static VkDescriptorSet	postprocess_descriptor_set;
+static VkDescriptorSet	postprocess_ui_descriptor_set;
 static VkBuffer			palette_colors_buffer;
 static VkBufferView		palette_buffer_view;
 static VkBuffer			palette_octree_buffer;
@@ -241,6 +246,8 @@ static void VID_Gamma_Init (void)
 {
 	Cvar_RegisterVariable (&vid_gamma);
 	Cvar_RegisterVariable (&vid_contrast);
+	Cvar_RegisterVariable (&r_ui_warp);
+	Cvar_RegisterVariable (&r_ui_chromatic);
 }
 
 /*
@@ -1543,69 +1550,33 @@ static void GL_CreateRenderPasses ()
 	}
 
 	{
-		// UI Render Pass
-		ZEROED_STRUCT_ARRAY (VkAttachmentDescription, attachment_descriptions, 2);
-
-		attachment_descriptions[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		attachment_descriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		attachment_descriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachment_descriptions[0].format = vulkan_globals.color_format;
-		attachment_descriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		attachment_descriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-		attachment_descriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachment_descriptions[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		attachment_descriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachment_descriptions[1].format = vulkan_globals.swap_chain_format;
-		attachment_descriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachment_descriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-		VkAttachmentReference color_input_attachment_reference;
-		color_input_attachment_reference.attachment = 0;
-		color_input_attachment_reference.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		// UI Render Pass (single subpass: GUI draws to color_buffers[1] with transparent clear)
+		ZEROED_STRUCT (VkAttachmentDescription, ui_attachment);
+		ui_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		ui_attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		ui_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		ui_attachment.format = vulkan_globals.color_format;
+		ui_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		ui_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 		VkAttachmentReference ui_color_attachment_reference;
 		ui_color_attachment_reference.attachment = 0;
 		ui_color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference swap_chain_attachment_reference;
-		swap_chain_attachment_reference.attachment = 1;
-		swap_chain_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		ZEROED_STRUCT_ARRAY (VkSubpassDescription, subpass_descriptions, 2);
-		subpass_descriptions[0].colorAttachmentCount = 1;
-		subpass_descriptions[0].pColorAttachments = &ui_color_attachment_reference;
-		subpass_descriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-
-		subpass_descriptions[1].colorAttachmentCount = 1;
-		subpass_descriptions[1].pColorAttachments = &swap_chain_attachment_reference;
-		subpass_descriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass_descriptions[1].inputAttachmentCount = 1;
-		subpass_descriptions[1].pInputAttachments = &color_input_attachment_reference;
-
-		VkSubpassDependency subpass_dependencies[1];
-		subpass_dependencies[0].srcSubpass = 0;
-		subpass_dependencies[0].dstSubpass = 1;
-		subpass_dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpass_dependencies[0].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpass_dependencies[0].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		subpass_dependencies[0].dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		subpass_dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		ZEROED_STRUCT (VkSubpassDescription, ui_subpass);
+		ui_subpass.colorAttachmentCount = 1;
+		ui_subpass.pColorAttachments = &ui_color_attachment_reference;
+		ui_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
 		ZEROED_STRUCT (VkRenderPassCreateInfo, render_pass_create_info);
 		render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		render_pass_create_info.attachmentCount = 2;
-		render_pass_create_info.pAttachments = attachment_descriptions;
-		render_pass_create_info.subpassCount = 2;
-		render_pass_create_info.pSubpasses = subpass_descriptions;
-		render_pass_create_info.dependencyCount = 1;
-		render_pass_create_info.pDependencies = subpass_dependencies;
+		render_pass_create_info.attachmentCount = 1;
+		render_pass_create_info.pAttachments = &ui_attachment;
+		render_pass_create_info.subpassCount = 1;
+		render_pass_create_info.pSubpasses = &ui_subpass;
 
 		cb_context_t *gui_cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
-		cb_context_t *post_process_cbx = vulkan_globals.secondary_cb_contexts[SCBX_POST_PROCESS];
-
 		assert (gui_cbx->render_pass == VK_NULL_HANDLE);
-		assert (post_process_cbx->render_pass == VK_NULL_HANDLE);
 
 		VkRenderPass render_pass;
 		err = vkCreateRenderPass (vulkan_globals.device, &render_pass_create_info, NULL, &render_pass);
@@ -1616,9 +1587,56 @@ static void GL_CreateRenderPasses ()
 		gui_cbx->render_pass = render_pass;
 		gui_cbx->render_pass_index = 1;
 		gui_cbx->subpass = 0;
-		post_process_cbx->render_pass = render_pass;
+	}
+
+	{
+		// Post-Process Render Pass (samples color_buffers[0] as texture, outputs to swapchain)
+		ZEROED_STRUCT (VkAttachmentDescription, pp_attachment);
+		pp_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		pp_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		pp_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		pp_attachment.format = vulkan_globals.swap_chain_format;
+		pp_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		pp_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		VkAttachmentReference pp_color_ref;
+		pp_color_ref.attachment = 0;
+		pp_color_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		ZEROED_STRUCT (VkSubpassDescription, pp_subpass);
+		pp_subpass.colorAttachmentCount = 1;
+		pp_subpass.pColorAttachments = &pp_color_ref;
+		pp_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+		ZEROED_STRUCT (VkSubpassDependency, pp_dependency);
+		pp_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		pp_dependency.dstSubpass = 0;
+		pp_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		pp_dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		pp_dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		pp_dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		pp_dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		ZEROED_STRUCT (VkRenderPassCreateInfo, pp_rp_create_info);
+		pp_rp_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		pp_rp_create_info.attachmentCount = 1;
+		pp_rp_create_info.pAttachments = &pp_attachment;
+		pp_rp_create_info.subpassCount = 1;
+		pp_rp_create_info.pSubpasses = &pp_subpass;
+		pp_rp_create_info.dependencyCount = 1;
+		pp_rp_create_info.pDependencies = &pp_dependency;
+
+		cb_context_t *post_process_cbx = vulkan_globals.secondary_cb_contexts[SCBX_POST_PROCESS];
+		assert (post_process_cbx->render_pass == VK_NULL_HANDLE);
+
+		err = vkCreateRenderPass (vulkan_globals.device, &pp_rp_create_info, NULL, &vulkan_globals.postprocess_render_pass);
+		if (err != VK_SUCCESS)
+			Sys_Error ("Couldn't create Vulkan render pass");
+		GL_SetObjectName ((uint64_t)vulkan_globals.postprocess_render_pass, VK_OBJECT_TYPE_RENDER_PASS, "postprocess");
+
+		post_process_cbx->render_pass = vulkan_globals.postprocess_render_pass;
 		post_process_cbx->render_pass_index = 1;
-		post_process_cbx->subpass = 1;
+		post_process_cbx->subpass = 0;
 	}
 
 	if (vulkan_globals.warp_render_pass == VK_NULL_HANDLE)
@@ -1949,22 +1967,43 @@ void GL_UpdateDescriptorSets (void)
 	GL_WaitForDeviceIdle ();
 
 	if (postprocess_descriptor_set != VK_NULL_HANDLE)
-		R_FreeDescriptorSet (postprocess_descriptor_set, &vulkan_globals.input_attachment_set_layout);
-	postprocess_descriptor_set = R_AllocateDescriptorSet (&vulkan_globals.input_attachment_set_layout);
+		R_FreeDescriptorSet (postprocess_descriptor_set, &vulkan_globals.single_texture_set_layout);
+	postprocess_descriptor_set = R_AllocateDescriptorSet (&vulkan_globals.single_texture_set_layout);
 
 	ZEROED_STRUCT (VkDescriptorImageInfo, image_info);
 	image_info.imageView = color_buffers_view[0];
 	image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	image_info.sampler = postprocess_sampler;
 
-	ZEROED_STRUCT (VkWriteDescriptorSet, input_attachment_write);
-	input_attachment_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	input_attachment_write.dstBinding = 0;
-	input_attachment_write.dstArrayElement = 0;
-	input_attachment_write.descriptorCount = 1;
-	input_attachment_write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-	input_attachment_write.dstSet = postprocess_descriptor_set;
-	input_attachment_write.pImageInfo = &image_info;
-	vkUpdateDescriptorSets (vulkan_globals.device, 1, &input_attachment_write, 0, NULL);
+	ZEROED_STRUCT (VkWriteDescriptorSet, sampler_write);
+	sampler_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	sampler_write.dstBinding = 0;
+	sampler_write.dstArrayElement = 0;
+	sampler_write.descriptorCount = 1;
+	sampler_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampler_write.dstSet = postprocess_descriptor_set;
+	sampler_write.pImageInfo = &image_info;
+	vkUpdateDescriptorSets (vulkan_globals.device, 1, &sampler_write, 0, NULL);
+
+	// UI texture descriptor (set 1): color_buffers[1] with UI drawn on transparent background
+	if (postprocess_ui_descriptor_set != VK_NULL_HANDLE)
+		R_FreeDescriptorSet (postprocess_ui_descriptor_set, &vulkan_globals.single_texture_set_layout);
+	postprocess_ui_descriptor_set = R_AllocateDescriptorSet (&vulkan_globals.single_texture_set_layout);
+
+	ZEROED_STRUCT (VkDescriptorImageInfo, ui_image_info);
+	ui_image_info.imageView = color_buffers_view[1];
+	ui_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	ui_image_info.sampler = postprocess_sampler;
+
+	ZEROED_STRUCT (VkWriteDescriptorSet, ui_sampler_write);
+	ui_sampler_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	ui_sampler_write.dstBinding = 0;
+	ui_sampler_write.dstArrayElement = 0;
+	ui_sampler_write.descriptorCount = 1;
+	ui_sampler_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	ui_sampler_write.dstSet = postprocess_ui_descriptor_set;
+	ui_sampler_write.pImageInfo = &ui_image_info;
+	vkUpdateDescriptorSets (vulkan_globals.device, 1, &ui_sampler_write, 0, NULL);
 
 	if (vulkan_globals.screen_effects_desc_set != VK_NULL_HANDLE)
 		R_FreeDescriptorSet (vulkan_globals.screen_effects_desc_set, &vulkan_globals.input_attachment_set_layout);
@@ -2365,25 +2404,41 @@ static void GL_CreateFrameBuffers (void)
 		GL_SetObjectName ((uint64_t)main_framebuffers[i], VK_OBJECT_TYPE_FRAMEBUFFER, "main");
 	}
 
-	for (i = 0; i < num_swap_chain_images; ++i)
 	{
+		// UI framebuffer: single attachment (color_buffers[1] - separate from game)
 		ZEROED_STRUCT (VkFramebufferCreateInfo, framebuffer_create_info);
 		framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebuffer_create_info.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
-		framebuffer_create_info.attachmentCount = 2;
+		framebuffer_create_info.attachmentCount = 1;
+		framebuffer_create_info.pAttachments = &color_buffers_view[1];
 		framebuffer_create_info.width = vid.width;
 		framebuffer_create_info.height = vid.height;
 		framebuffer_create_info.layers = 1;
 
-		VkImageView attachments[2] = {color_buffers_view[0], swapchain_images_views[i]};
-		framebuffer_create_info.pAttachments = attachments;
-
-		assert (ui_framebuffers[i] == VK_NULL_HANDLE);
-		err = vkCreateFramebuffer (vulkan_globals.device, &framebuffer_create_info, NULL, &ui_framebuffers[i]);
+		assert (ui_framebuffers[0] == VK_NULL_HANDLE);
+		err = vkCreateFramebuffer (vulkan_globals.device, &framebuffer_create_info, NULL, &ui_framebuffers[0]);
 		if (err != VK_SUCCESS)
 			Sys_Error ("vkCreateFramebuffer failed");
+		GL_SetObjectName ((uint64_t)ui_framebuffers[0], VK_OBJECT_TYPE_FRAMEBUFFER, "ui");
+	}
 
-		GL_SetObjectName ((uint64_t)ui_framebuffers[i], VK_OBJECT_TYPE_FRAMEBUFFER, "ui");
+	for (i = 0; i < num_swap_chain_images; ++i)
+	{
+		// Post-process framebuffers: one per swapchain image
+		ZEROED_STRUCT (VkFramebufferCreateInfo, framebuffer_create_info);
+		framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_create_info.renderPass = vulkan_globals.postprocess_render_pass;
+		framebuffer_create_info.attachmentCount = 1;
+		framebuffer_create_info.pAttachments = &swapchain_images_views[i];
+		framebuffer_create_info.width = vid.width;
+		framebuffer_create_info.height = vid.height;
+		framebuffer_create_info.layers = 1;
+
+		assert (postprocess_framebuffers[i] == VK_NULL_HANDLE);
+		err = vkCreateFramebuffer (vulkan_globals.device, &framebuffer_create_info, NULL, &postprocess_framebuffers[i]);
+		if (err != VK_SUCCESS)
+			Sys_Error ("vkCreateFramebuffer failed");
+		GL_SetObjectName ((uint64_t)postprocess_framebuffers[i], VK_OBJECT_TYPE_FRAMEBUFFER, "postprocess");
 	}
 }
 
@@ -2410,6 +2465,24 @@ static void GL_CreateRenderResources (void)
 	R_CreatePipelines ();
 
 	render_resources_created = true;
+
+	if (postprocess_sampler == VK_NULL_HANDLE)
+	{
+		ZEROED_STRUCT (VkSamplerCreateInfo, sampler_create_info);
+		sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler_create_info.magFilter = VK_FILTER_LINEAR;
+		sampler_create_info.minFilter = VK_FILTER_LINEAR;
+		sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_create_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_create_info.maxLod = 0.0f;
+
+		VkResult err = vkCreateSampler (vulkan_globals.device, &sampler_create_info, NULL, &postprocess_sampler);
+		if (err != VK_SUCCESS)
+			Sys_Error ("vkCreateSampler failed");
+		GL_SetObjectName ((uint64_t)postprocess_sampler, VK_OBJECT_TYPE_SAMPLER, "postprocess");
+	}
 
 	GL_UpdateDescriptorSets ();
 
@@ -2457,8 +2530,10 @@ static void GL_DestroyRenderResources (void)
 
 	R_DestroyPipelines ();
 
-	R_FreeDescriptorSet (postprocess_descriptor_set, &vulkan_globals.input_attachment_set_layout);
+	R_FreeDescriptorSet (postprocess_descriptor_set, &vulkan_globals.single_texture_set_layout);
 	postprocess_descriptor_set = VK_NULL_HANDLE;
+	R_FreeDescriptorSet (postprocess_ui_descriptor_set, &vulkan_globals.single_texture_set_layout);
+	postprocess_ui_descriptor_set = VK_NULL_HANDLE;
 
 	R_FreeDescriptorSet (vulkan_globals.screen_effects_desc_set, &vulkan_globals.screen_effects_set_layout);
 	vulkan_globals.screen_effects_desc_set = VK_NULL_HANDLE;
@@ -2496,12 +2571,15 @@ static void GL_DestroyRenderResources (void)
 		main_framebuffers[i] = VK_NULL_HANDLE;
 	}
 
+	vkDestroyFramebuffer (vulkan_globals.device, ui_framebuffers[0], NULL);
+	ui_framebuffers[0] = VK_NULL_HANDLE;
+
 	for (uint32_t i = 0; i < num_swap_chain_images; ++i)
 	{
 		vkDestroyImageView (vulkan_globals.device, swapchain_images_views[i], NULL);
 		swapchain_images_views[i] = VK_NULL_HANDLE;
-		vkDestroyFramebuffer (vulkan_globals.device, ui_framebuffers[i], NULL);
-		ui_framebuffers[i] = VK_NULL_HANDLE;
+		vkDestroyFramebuffer (vulkan_globals.device, postprocess_framebuffers[i], NULL);
+		postprocess_framebuffers[i] = VK_NULL_HANDLE;
 
 		// Swapchain images do not need to be destroyed
 		swapchain_images[i] = VK_NULL_HANDLE;
@@ -2517,9 +2595,13 @@ static void GL_DestroyRenderResources (void)
 	vulkan_swapchain = VK_NULL_HANDLE;
 
 	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.secondary_cb_contexts[SCBX_GUI][0].render_pass, NULL);
-	for (int scbx_index = SCBX_GUI; scbx_index <= SCBX_POST_PROCESS; ++scbx_index)
-		for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[scbx_index]; ++i)
-			vulkan_globals.secondary_cb_contexts[scbx_index][i].render_pass = VK_NULL_HANDLE;
+	for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[SCBX_GUI]; ++i)
+		vulkan_globals.secondary_cb_contexts[SCBX_GUI][i].render_pass = VK_NULL_HANDLE;
+
+	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.postprocess_render_pass, NULL);
+	vulkan_globals.postprocess_render_pass = VK_NULL_HANDLE;
+	for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[SCBX_POST_PROCESS]; ++i)
+		vulkan_globals.secondary_cb_contexts[SCBX_POST_PROCESS][i].render_pass = VK_NULL_HANDLE;
 	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.main_render_pass[0], NULL);
 	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.main_render_pass[1], NULL);
 	vulkan_globals.main_render_pass[0] = VK_NULL_HANDLE;
@@ -2527,6 +2609,12 @@ static void GL_DestroyRenderResources (void)
 	for (int scbx_index = SCBX_WORLD; scbx_index <= SCBX_VIEW_MODEL; ++scbx_index)
 		for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[scbx_index]; ++i)
 			vulkan_globals.secondary_cb_contexts[scbx_index][i].render_pass = VK_NULL_HANDLE;
+
+	if (postprocess_sampler != VK_NULL_HANDLE)
+	{
+		vkDestroySampler (vulkan_globals.device, postprocess_sampler, NULL);
+		postprocess_sampler = VK_NULL_HANDLE;
+	}
 }
 
 /*
@@ -2621,8 +2709,11 @@ void GL_BeginRenderingTask (void *unused)
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport (cbx->cb, 0, 1, &viewport);
 
-			R_BindPipeline (cbx, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.basic_blend_pipeline[cbx->render_pass_index]);
-			GL_SetCanvas (cbx, CANVAS_NONE);
+			if (scbx_index != SCBX_POST_PROCESS)
+			{
+				R_BindPipeline (cbx, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.basic_blend_pipeline[cbx->render_pass_index]);
+				GL_SetCanvas (cbx, CANVAS_NONE);
+			}
 		}
 	}
 
@@ -3087,12 +3178,18 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 
 		// Render post process
 		GL_Viewport (cbx, 0, 0, vid.width, vid.height, 0.0f, 1.0f);
-		float postprocess_values[2] = {vid_gamma.value, q_min (2.0f, q_max (1.0f, vid_contrast.value))};
+		float postprocess_values[4] = {
+			vid_gamma.value,
+			q_min (2.0f, q_max (1.0f, vid_contrast.value)),
+			r_ui_warp.value,
+			r_ui_chromatic.value,
+		};
 
 		R_BindPipeline (cbx, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline);
+		VkDescriptorSet pp_sets[2] = {postprocess_descriptor_set, postprocess_ui_descriptor_set};
 		vkCmdBindDescriptorSets (
-			cbx->cb, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline.layout.handle, 0, 1, &postprocess_descriptor_set, 0, NULL);
-		R_PushConstants (cbx, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2 * sizeof (float), postprocess_values);
+			cbx->cb, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline.layout.handle, 0, 2, pp_sets, 0, NULL);
+		R_PushConstants (cbx, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 * sizeof (float), postprocess_values);
 		vkCmdDraw (cbx->cb, 3, 1, 0, 0);
 	}
 
@@ -3148,15 +3245,55 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 	GL_ScreenEffects (&vulkan_globals.primary_cb_contexts[PCBX_RENDER_PASSES], screen_effects, parms);
 
 	{
-		ZEROED_STRUCT (VkRenderPassBeginInfo, render_pass_begin_info);
-		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_begin_info.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
-		render_pass_begin_info.framebuffer = ui_framebuffers[current_swapchain_buffer];
-		render_pass_begin_info.renderArea = render_area;
-		render_pass_begin_info.clearValueCount = 0;
-		vkCmdBeginRenderPass (render_passes_cb, &render_pass_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		// UI Render Pass (GUI draws to color_buffers[1] with transparent clear)
+		VkClearValue ui_clear_value;
+		ui_clear_value.color.float32[0] = 0.0f;
+		ui_clear_value.color.float32[1] = 0.0f;
+		ui_clear_value.color.float32[2] = 0.0f;
+		ui_clear_value.color.float32[3] = 0.0f;
+
+		ZEROED_STRUCT (VkRenderPassBeginInfo, ui_rp_begin_info);
+		ui_rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		ui_rp_begin_info.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
+		ui_rp_begin_info.framebuffer = ui_framebuffers[0];
+		ui_rp_begin_info.renderArea = render_area;
+		ui_rp_begin_info.clearValueCount = 1;
+		ui_rp_begin_info.pClearValues = &ui_clear_value;
+		vkCmdBeginRenderPass (render_passes_cb, &ui_rp_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vkCmdExecuteCommands (render_passes_cb, 1, &vulkan_globals.secondary_cb_contexts[SCBX_GUI]->cb);
-		vkCmdNextSubpass (render_passes_cb, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		vkCmdEndRenderPass (render_passes_cb);
+	}
+
+	{
+		// Transition color_buffers[0] from COLOR_ATTACHMENT_OPTIMAL to SHADER_READ_ONLY_OPTIMAL
+		// so the post-process pass can sample it as a texture
+		ZEROED_STRUCT (VkImageMemoryBarrier, game_barrier);
+		game_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		game_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		game_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		game_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		game_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		game_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		game_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		game_barrier.image = vulkan_globals.color_buffers[0];
+		game_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		game_barrier.subresourceRange.baseMipLevel = 0;
+		game_barrier.subresourceRange.levelCount = 1;
+		game_barrier.subresourceRange.baseArrayLayer = 0;
+		game_barrier.subresourceRange.layerCount = 1;
+		vkCmdPipelineBarrier (
+			render_passes_cb, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &game_barrier);
+	}
+
+	{
+		// Post-Process Render Pass (samples color_buffers[0] + color_buffers[1], outputs to swapchain)
+		ZEROED_STRUCT (VkRenderPassBeginInfo, pp_rp_begin_info);
+		pp_rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		pp_rp_begin_info.renderPass = vulkan_globals.postprocess_render_pass;
+		pp_rp_begin_info.framebuffer = postprocess_framebuffers[current_swapchain_buffer];
+		pp_rp_begin_info.renderArea = render_area;
+		pp_rp_begin_info.clearValueCount = 0;
+		vkCmdBeginRenderPass (render_passes_cb, &pp_rp_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vkCmdExecuteCommands (render_passes_cb, 1, &vulkan_globals.secondary_cb_contexts[SCBX_POST_PROCESS]->cb);
 		vkCmdEndRenderPass (render_passes_cb);
 	}

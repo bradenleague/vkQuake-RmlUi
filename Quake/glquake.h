@@ -280,6 +280,7 @@ typedef struct
 	// Render passes
 	VkRenderPass main_render_pass[2]; // stencil clear, stencil dont_care
 	VkRenderPass warp_render_pass;
+	VkRenderPass postprocess_render_pass;
 
 	// Pipelines
 	vulkan_pipeline_t		 basic_alphatest_pipeline[2];

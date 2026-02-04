@@ -1687,19 +1687,20 @@ void R_CreatePipelineLayouts ()
 	}
 
 	{
-		// Postprocess
-		VkDescriptorSetLayout postprocess_descriptor_set_layouts[1] = {
-			vulkan_globals.input_attachment_set_layout.handle,
+		// Postprocess: set 0 = game texture, set 1 = UI texture
+		VkDescriptorSetLayout postprocess_descriptor_set_layouts[2] = {
+			vulkan_globals.single_texture_set_layout.handle,
+			vulkan_globals.single_texture_set_layout.handle,
 		};
 
 		ZEROED_STRUCT (VkPushConstantRange, push_constant_range);
 		push_constant_range.offset = 0;
-		push_constant_range.size = 2 * sizeof (float);
+		push_constant_range.size = 4 * sizeof (float);
 		push_constant_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		ZEROED_STRUCT (VkPipelineLayoutCreateInfo, pipeline_layout_create_info);
 		pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_create_info.setLayoutCount = 1;
+		pipeline_layout_create_info.setLayoutCount = 2;
 		pipeline_layout_create_info.pSetLayouts = postprocess_descriptor_set_layouts;
 		pipeline_layout_create_info.pushConstantRangeCount = 1;
 		pipeline_layout_create_info.pPushConstantRanges = &push_constant_range;
@@ -3262,9 +3263,9 @@ static void R_CreatePostprocessPipelines ()
 
 	infos.shader_stages[0].module = postprocess_vert_module;
 	infos.shader_stages[1].module = postprocess_frag_module;
-	infos.graphics_pipeline.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
+	infos.graphics_pipeline.renderPass = vulkan_globals.postprocess_render_pass;
 	infos.graphics_pipeline.layout = vulkan_globals.postprocess_pipeline.layout.handle;
-	infos.graphics_pipeline.subpass = 1;
+	infos.graphics_pipeline.subpass = 0;
 
 	assert (vulkan_globals.postprocess_pipeline.handle == VK_NULL_HANDLE);
 	err = vkCreateGraphicsPipelines (vulkan_globals.device, VK_NULL_HANDLE, 1, &infos.graphics_pipeline, NULL, &vulkan_globals.postprocess_pipeline.handle);
