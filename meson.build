@@ -302,6 +302,7 @@ if use_rmlui
         '../rmlui/internal/stb_image_impl.c',
         '../rmlui/internal/quake_cvar_provider.cpp',
         '../rmlui/internal/quake_command_executor.cpp',
+        '../rmlui/internal/notification_model.cpp',
     )
 
     # Add RmlUI shaders to the shaders list

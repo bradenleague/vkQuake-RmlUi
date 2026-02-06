@@ -190,6 +190,10 @@ void SCR_CenterPrint (const char *str) // update centerprint data
 			scr_center_lines++;
 		str++;
 	}
+
+#ifdef USE_RMLUI
+	UI_NotifyCenterPrint (scr_centerstring);
+#endif
 }
 
 static void SCR_DrawCenterString (cb_context_t *cbx) // actually do the drawing
@@ -245,6 +249,11 @@ static void SCR_CheckDrawCenterString (cb_context_t *cbx)
 {
 	if (scr_center_lines > scr_erase_lines)
 		scr_erase_lines = scr_center_lines;
+
+#ifdef USE_RMLUI
+	if (ui_use_rmlui_hud.value)
+		return; // RmlUI HUD handles centerprint rendering
+#endif
 
 	if (scr_centertime_off <= cl.time && !cl.intermission)
 		return;
@@ -977,7 +986,12 @@ static void SCR_DrawConsole (cb_context_t *cbx)
 	else
 	{
 		if (key_dest == key_game || key_dest == key_message)
-			Con_DrawNotify (cbx); // only draw notify in game
+		{
+#ifdef USE_RMLUI
+			if (!ui_use_rmlui_hud.value)
+#endif
+				Con_DrawNotify (cbx); // only draw notify in game
+		}
 	}
 }
 

@@ -23,6 +23,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
+#ifdef USE_RMLUI
+#include "ui_manager.h"
+extern cvar_t ui_use_rmlui_hud;
+#endif
+
 #include <sys/types.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -511,6 +516,12 @@ void Con_Printf (const char *fmt, ...)
 
 	// write it to the scrollable buffer
 	Con_Print (msg);
+
+#ifdef USE_RMLUI
+	// Forward to RmlUI notify area when in-game
+	if (ui_use_rmlui_hud.value && cls.signon == SIGNONS)
+		UI_NotifyPrint (msg);
+#endif
 
 	// update the screen if the console is displayed
 	if (cls.signon != SIGNONS && !scr_disabled_for_loading && !Tasks_IsWorker ())
