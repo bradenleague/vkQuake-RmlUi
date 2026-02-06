@@ -119,7 +119,7 @@ cvar_t		  vid_fsaamode = {"vid_fsaamode", "0", CVAR_ARCHIVE};
 cvar_t		  vid_gamma = {"gamma", "0.9", CVAR_ARCHIVE};		// johnfitz -- moved here from view.c
 cvar_t		  vid_contrast = {"contrast", "1.4", CVAR_ARCHIVE}; // QuakeSpasm, MarkV
 cvar_t		  r_ui_warp = {"r_ui_warp", "-0.1", CVAR_NONE};
-cvar_t		  r_ui_chromatic = {"r_ui_chromatic", "0.01", CVAR_NONE};
+cvar_t		  r_ui_chromatic = {"r_ui_chromatic", "0.003", CVAR_NONE};
 cvar_t		  r_usesops = {"r_usesops", "1", CVAR_ARCHIVE};		// johnfitz
 #if defined(_DEBUG)
 static cvar_t r_raydebug = {"r_raydebug", "0", 0};
