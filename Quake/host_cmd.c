@@ -836,8 +836,7 @@ static void Host_Map_f (void)
 	key_dest = key_game; // remove console or menu
 #ifdef USE_RMLUI
 	/* Close any open RmlUI menus so input returns to game */
-	while (UI_WantsMenuInput ())
-		UI_HandleEscape ();
+	UI_CloseAllMenusImmediate ();
 #endif
 	SCR_BeginLoadingPlaque ();
 

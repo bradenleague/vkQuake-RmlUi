@@ -117,18 +117,10 @@ static void UI_Menu_f (void)
 /* Close all RmlUI menus and return to game */
 static void UI_CloseMenu_f (void)
 {
-	/* Pop all menus */
-	while (UI_WantsMenuInput ())
-		UI_HandleEscape ();
-
-	/* Restore game input */
-	if (!UI_WantsMenuInput ())
-	{
-		IN_Activate ();
-		key_dest = key_game;
-		if (!UI_IsHUDVisible ())
-			UI_SetVisible (0);
-	}
+	/* Tear down the menu stack synchronously */
+	UI_CloseAllMenusImmediate ();
+	if (!UI_IsHUDVisible ())
+		UI_SetVisible (0);
 }
 #endif
 
