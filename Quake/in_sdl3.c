@@ -143,11 +143,27 @@ void IN_SendKeyEvents (void)
 			vid.height = event.window.data2;
 			vid.restart_next_frame = true;
 			Cvar_FindVar ("scr_conscale")->callback (NULL);
+#ifdef USE_RMLUI
+			UI_Resize (event.window.data1, event.window.data2);
+#endif
 			break;
 		case SDL_EVENT_TEXT_INPUT:
 			if (in_debugkeys.value)
 				IN_DebugTextEvent (&event);
 
+#ifdef USE_RMLUI
+			/* Forward text input to RmlUI when menu is active */
+			if (UI_WantsMenuInput() || UI_IsMenuVisible())
+			{
+				unsigned char *ch;
+				for (ch = (unsigned char *)event.text.text; *ch; ch++)
+				{
+					if ((*ch & ~0x7F) == 0)
+						UI_CharEvent (*ch);
+				}
+				break;  /* Don't pass to Quake */
+			}
+#endif
 			// We use SDL_EVENT_TEXT_INPUT for typing in the console / chat.
 			// SDL uses the local keyboard layout and handles modifiers
 			// (shift for uppercase, etc.) for us.
