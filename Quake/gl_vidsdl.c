@@ -4105,6 +4105,32 @@ static void VID_Menu_Init (void)
 	}
 }
 
+#ifdef USE_RMLUI
+/*
+================
+VID_SyncModesToUI
+
+Pushes video mode list to RmlUI for resolution picker.
+Called before opening the video options menu.
+================
+*/
+void VID_SyncModesToUI (void)
+{
+	int i;
+	ui_video_mode_t modes[MAX_MODE_LIST];
+	int cur_w = (int)vid_width.value;
+	int cur_h = (int)vid_height.value;
+
+	for (i = 0; i < vid_menu_nummodes; i++)
+	{
+		modes[i].width = vid_menu_modes[i].width;
+		modes[i].height = vid_menu_modes[i].height;
+		modes[i].is_current = (modes[i].width == cur_w && modes[i].height == cur_h);
+	}
+	UI_SyncVideoModes (modes, vid_menu_nummodes);
+}
+#endif
+
 /*
 ================
 VID_Menu_RebuildRateList
@@ -4112,7 +4138,7 @@ VID_Menu_RebuildRateList
 regenerates rate list based on current vid_width, vid_height
 ================
 */
-static void VID_Menu_RebuildRateList (void)
+void VID_Menu_RebuildRateList (void)
 {
 	int i, j, r;
 

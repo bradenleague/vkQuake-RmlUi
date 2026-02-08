@@ -897,6 +897,35 @@ static void M_ScanSaves (void)
 	SDL_free (save_path);
 }
 
+#ifdef USE_RMLUI
+/*
+================
+M_SyncSavesToUI
+
+Scans save files and pushes slot data to RmlUI.
+Called before opening load_game or save_game menus.
+================
+*/
+void M_SyncSavesToUI (void)
+{
+	int i;
+	ui_save_slot_t slots[MAX_SAVEGAMES];
+	char ids[MAX_SAVEGAMES][4]; /* "s0".."s19" */
+
+	M_ScanSaves ();
+
+	for (i = 0; i < MAX_SAVEGAMES; i++)
+	{
+		q_snprintf (ids[i], sizeof (ids[i]), "s%d", i);
+		slots[i].slot_id = ids[i];
+		slots[i].description = m_filenames[i];
+		slots[i].slot_number = i;
+		slots[i].is_loadable = loadable[i];
+	}
+	UI_SyncSaveSlots (slots, MAX_SAVEGAMES);
+}
+#endif
+
 static void M_Menu_Load_f (void)
 {
 	M_MenuChanged ();
