@@ -145,6 +145,14 @@ void IN_SendKeyEvents (void)
 				S_BlockSound ();
 				VID_FocusLost ();
 			}
+#ifdef USE_RMLUI
+			else if (event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED)
+			{
+				/* Window moved to a different display — DPI may differ.
+				   Recompute pixel ratio even if size didn't change. */
+				UI_SetPixelRatio (VID_GetPixelRatio ());
+			}
+#endif
 			else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 			{
 				/* SDL2 SIZE_CHANGED reports logical (point) sizes, but we
