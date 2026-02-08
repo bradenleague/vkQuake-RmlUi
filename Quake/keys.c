@@ -593,6 +593,30 @@ const char *Key_KeynumToString (int keynum)
 
 /*
 ===================
+Key_FindBinding
+
+Returns the name of the first key bound to the given action,
+or NULL if no key is bound.
+===================
+*/
+const char *Key_FindBinding (const char *action)
+{
+	int i;
+
+	if (!action || !action[0])
+		return NULL;
+
+	for (i = 0; i < MAX_KEYS; i++)
+	{
+		if (keybindings[i] && !q_strcasecmp (keybindings[i], action))
+			return Key_KeynumToString (i);
+	}
+
+	return NULL;
+}
+
+/*
+===================
 Key_SetBinding
 ===================
 */
