@@ -293,17 +293,17 @@ if use_rmlui
 
     # RmlUI sources
     rmlui_srcs = files(
-        '../rmlui/ui_manager.cpp',
-        '../rmlui/internal/render_interface_vk.cpp',
-        '../rmlui/internal/system_interface.cpp',
-        '../rmlui/internal/game_data_model.cpp',
-        '../rmlui/internal/cvar_binding.cpp',
-        '../rmlui/internal/menu_event_handler.cpp',
-        '../rmlui/internal/stb_image_impl.c',
-        '../rmlui/internal/quake_cvar_provider.cpp',
-        '../rmlui/internal/quake_command_executor.cpp',
-        '../rmlui/internal/notification_model.cpp',
-        '../rmlui/internal/vk_allocator.cpp',
+        '../src/ui_manager.cpp',
+        '../src/internal/render_interface_vk.cpp',
+        '../src/internal/system_interface.cpp',
+        '../src/internal/game_data_model.cpp',
+        '../src/internal/cvar_binding.cpp',
+        '../src/internal/menu_event_handler.cpp',
+        '../src/internal/stb_image_impl.c',
+        '../src/internal/quake_cvar_provider.cpp',
+        '../src/internal/quake_command_executor.cpp',
+        '../src/internal/notification_model.cpp',
+        '../src/internal/vk_allocator.cpp',
     )
 
     # Add RmlUI shaders to the shaders list
@@ -315,9 +315,9 @@ if use_rmlui
 
     # RmlUI include directories
     rmlui_incdir = include_directories(
-        '../external/rmlui/Include',
-        '../rmlui',
-        '../rmlui/internal',
+        '../lib/rmlui/Include',
+        '../src',
+        '../src/internal',
         'Quake',
     )
 
