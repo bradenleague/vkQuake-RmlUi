@@ -415,6 +415,13 @@ void M_SyncModsToUI (void)
 
 	Modlist_Init ();
 
+	// Always include the base game as the first entry so the user
+	// can switch back from a mod.
+	q_strlcpy (names[0], GAMENAME, sizeof (names[0]));
+	mods[0].name = names[0];
+	mods[0].display_name = GAMENAME;
+	count = 1;
+
 	for (mod = modlist; mod && count < MAX_UI_MODS; mod = mod->next)
 	{
 		// Skip internal helper directories that are not runnable gamedirs.
