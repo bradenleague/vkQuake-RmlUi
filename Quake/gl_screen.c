@@ -355,6 +355,15 @@ void SCR_UpdateFovLerp (void)
 		return;
 	}
 
+	// When game time isn't advancing (e.g. paused), snap to target
+	// since the exponential decay would produce zero movement.
+	if (dt <= 0.f)
+	{
+		cl.fov_current = target;
+		vid.recalc_refdef = 1;
+		return;
+	}
+
 	// Exponential decay: tau=0.06 gives ~95% in 0.18s
 	cl.fov_current += diff * (1.f - expf (-dt / 0.06f));
 	vid.recalc_refdef = 1;
