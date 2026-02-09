@@ -1,0 +1,51 @@
+<rml>
+<head>
+    <title>Join Game</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Join Game</h2>
+                </div>
+
+                <div class="option-list">
+                    <div class="section-header">Direct Connect</div>
+
+                    <div class="option-row">
+                        <span class="option-label">Server Address</span>
+                        <input id="server-address" type="text" class="text"
+                               value="" />
+                    </div>
+
+                    <div class="section-header">Server Browser</div>
+
+                    <div class="menu-nav">
+                        <button class="menu-item" onclick="command('slist')">
+                            Search for Servers
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item primary" onclick="connect_to('server-address')">
+                        Connect
+                    </button>
+
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

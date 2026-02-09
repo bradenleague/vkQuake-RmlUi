@@ -1,0 +1,44 @@
+<rml>
+<head>
+    <title>Scoreboard</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/hud.rcss"/>
+</head>
+<body data-model="game" class="hud-overlay">
+
+    <div class="scoreboard-overlay">
+        <div class="scoreboard-title">{{ level_name }}</div>
+
+        <!-- Single Player Stats -->
+        <div data-if="!deathmatch">
+            <div class="scoreboard-row">
+                <span class="scoreboard-name">Monsters Killed</span>
+                <span class="scoreboard-frags">{{ monsters }} / {{ total_monsters }}</span>
+            </div>
+            <div class="scoreboard-row">
+                <span class="scoreboard-name">Secrets Found</span>
+                <span class="scoreboard-frags">{{ secrets }} / {{ total_secrets }}</span>
+            </div>
+            <div class="scoreboard-row">
+                <span class="scoreboard-name">Time</span>
+                <span class="scoreboard-frags">{{ time_minutes }}:{{ time_seconds }}</span>
+            </div>
+        </div>
+
+        <!-- Deathmatch Scoreboard Header -->
+        <div data-if="deathmatch" class="scoreboard-header">
+            <span style="flex: 1 1 auto;">Player</span>
+            <span style="width: 60dp; text-align: right;">Frags</span>
+        </div>
+
+        <!-- Deathmatch Player List -->
+        <div data-if="deathmatch" id="player-list">
+            <div data-for="player : players" class="scoreboard-row">
+                <span class="scoreboard-name">{{ player.name }}</span>
+                <span class="scoreboard-frags">{{ player.frags }}</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

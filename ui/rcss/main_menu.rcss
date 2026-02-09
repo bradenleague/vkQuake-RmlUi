@@ -1,0 +1,216 @@
+/*
+ * vkQuake RmlUI - Main Menu Stylesheet
+ *
+ * Brutalist design: monochrome + Quake red accent.
+ * Used by main_menu.rml and pause_menu.rml.
+ */
+
+/* Transparent overlay */
+#main-menu {
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100%;
+}
+
+/* Flexbox centering wrapper */
+#center-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Content container */
+#menu-content {
+    width: 280dp;
+    text-align: center;
+}
+
+/* Game title — amber, heavy, uppercase */
+#game-title {
+    font-family: Space Grotesk;
+    font-size: 64dp;
+    font-weight: bold;
+    color: #8b0000;
+    letter-spacing: 6dp;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 4dp;
+    opacity: 0;
+    transform: translateY(12dp);
+}
+
+/* Tagline */
+#tagline {
+    font-family: LatoLatin;
+    font-size: 11dp;
+    color: #666666;
+    letter-spacing: 2dp;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 32dp;
+    opacity: 0;
+    transform: translateY(10dp);
+}
+
+/* Button container */
+#menu-buttons {
+    margin-bottom: 24dp;
+    opacity: 0;
+    transform: translateY(10dp);
+}
+
+/* Base button — wire-frame, transparent bg */
+.btn {
+    display: block;
+    width: 200dp;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 6dp;
+    padding-top: 12dp;
+    padding-bottom: 12dp;
+    padding-left: 0;
+    padding-right: 0;
+    background-color: transparent;
+    border: 2dp #333333;
+    color: #ffffff;
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    letter-spacing: 2dp;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.btn:hover {
+    background-color: #1a1a1a;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+.btn:active {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Primary button — solid amber fill */
+.btn-primary {
+    display: block;
+    width: 200dp;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 16dp;
+    padding-top: 14dp;
+    padding-bottom: 14dp;
+    padding-left: 0;
+    padding-right: 0;
+    background-color: #8b0000;
+    border: 2dp #8b0000;
+    color: #000000;
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    letter-spacing: 2dp;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.1s, border-color 0.1s;
+}
+
+.btn-primary:hover {
+    background-color: #b30000;
+    border-color: #b30000;
+}
+
+.btn-primary:active {
+    background-color: #670000;
+    border-color: #670000;
+}
+
+/* Quit button — smaller, muted, fills red on hover */
+.btn-quit {
+    display: block;
+    width: 140dp;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 12dp;
+    margin-bottom: 0;
+    padding-top: 8dp;
+    padding-bottom: 8dp;
+    padding-left: 0;
+    padding-right: 0;
+    background-color: transparent;
+    border: 2dp #333333;
+    color: #666666;
+    font-family: Space Grotesk;
+    font-size: 11dp;
+    font-weight: bold;
+    letter-spacing: 2dp;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.btn-quit:hover {
+    background-color: #ff3333;
+    border-color: #ff3333;
+    color: #ffffff;
+}
+
+/* Version text */
+#version {
+    font-size: 9dp;
+    color: #444444;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+}
+
+/* ============================================
+   Entrance Transitions — triggered by .menu-enter
+   class added via C++ on document Show()
+   ============================================ */
+
+.menu-enter #game-title {
+    opacity: 1;
+    transform: translateY(0dp);
+    transition: opacity transform 0.4s cubic-out;
+}
+
+.menu-enter #tagline {
+    opacity: 1;
+    transform: translateY(0dp);
+    transition: opacity transform 0.3s 0.08s cubic-out;
+}
+
+.menu-enter #menu-buttons {
+    opacity: 1;
+    transform: translateY(0dp);
+    transition: opacity transform 0.25s 0.14s cubic-out;
+}
+
+.menu-enter #version {
+    opacity: 1;
+    transition: opacity 0.25s 0.4s cubic-out;
+}
+
+/* Startup entrance — extra delay for layout settle */
+.startup-enter #game-title {
+    transition: opacity transform 0.4s 0.2s cubic-out;
+}
+
+.startup-enter #tagline {
+    transition: opacity transform 0.3s 0.28s cubic-out;
+}
+
+.startup-enter #menu-buttons {
+    transition: opacity transform 0.25s 0.34s cubic-out;
+}
+
+.startup-enter #version {
+    transition: opacity 0.25s 0.6s cubic-out;
+}

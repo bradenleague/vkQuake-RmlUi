@@ -1,0 +1,71 @@
+<rml>
+<head>
+    <title>Help</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Controls</h2>
+                </div>
+
+                <div class="option-row">
+                    <span class="option-label">W A S D</span>
+                    <span class="option-value">Move</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">Mouse</span>
+                    <span class="option-value">Look</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">Left Click</span>
+                    <span class="option-value">Attack</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">Space</span>
+                    <span class="option-value">Jump / Swim Up</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">1 - 8</span>
+                    <span class="option-value">Select Weapon</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">Tab</span>
+                    <span class="option-value">Scoreboard</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">T</span>
+                    <span class="option-value">Chat</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">Esc</span>
+                    <span class="option-value">Menu</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">~ (Tilde)</span>
+                    <span class="option-value">Console</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">F5</span>
+                    <span class="option-value">Quick Save</span>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">F9</span>
+                    <span class="option-value">Quick Load</span>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

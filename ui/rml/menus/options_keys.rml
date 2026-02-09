@@ -1,0 +1,42 @@
+<rml>
+<head>
+    <title>Key Bindings</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="cvars">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Controls</h2>
+                </div>
+
+                <div class="scroll-area" style="max-height: 450dp;">
+                    <div class="option-list">
+
+                        <div data-for="kb : keybinds">
+                            <div class="section-header" data-if="kb.is_header">{{ kb.label }}</div>
+                            <div data-if="!kb.is_header"
+                                 class="keybind-row"
+                                 data-class-capturing="kb.is_capturing"
+                                 data-event-click="capture_key(kb.action)">
+                                <span class="keybind-action">{{ kb.label }}</span>
+                                <span class="keybind-key" data-if="!kb.is_capturing">{{ kb.key_name }}</span>
+                                <span class="keybind-key" data-if="kb.is_capturing">Press a key...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <button class="btn" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

@@ -1,0 +1,51 @@
+<rml>
+<head>
+    <title>Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Options</h2>
+                </div>
+
+                <div class="menu-nav">
+                    <button class="menu-item" onclick="navigate('options_game')">
+                        Game Options
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('options_keys')">
+                        Controls
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('options_graphics')">
+                        Graphics
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('options_sound')">
+                        Sound
+                    </button>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item danger" onclick="navigate('confirm_reset')">
+                        Reset to Defaults
+                    </button>
+
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

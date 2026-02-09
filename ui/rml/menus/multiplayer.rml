@@ -1,0 +1,43 @@
+<rml>
+<head>
+    <title>Multiplayer</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Multiplayer</h2>
+                </div>
+
+                <div class="menu-nav">
+                    <button class="menu-item" onclick="navigate('join_game')">
+                        Join Game
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('create_game')">
+                        Create Game
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('player_setup')">
+                        Player Setup
+                    </button>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

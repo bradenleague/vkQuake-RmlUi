@@ -1,0 +1,83 @@
+<rml>
+<head>
+    <title>Create Game</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="cvars">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Create Game</h2>
+                </div>
+
+                <div class="scroll-area">
+                    <div class="option-list">
+                        <div class="section-header">Server</div>
+
+                        <div class="option-row">
+                            <span class="option-label">Map</span>
+                            <input id="map-name" type="text" class="text"
+                                   value="start" />
+                        </div>
+
+                        <div class="option-row">
+                            <span class="option-label">Max Players</span>
+                            <input id="max-players" type="text" class="text"
+                                   value="4" />
+                        </div>
+
+                        <div class="section-header">Game Rules</div>
+
+                        <!-- Game Type -->
+                        <div class="option-row clickable" onclick="cycle_cvar('deathmatch', 1)">
+                            <span class="option-label">Game Type</span>
+                            <span class="option-value">{{ deathmatch_label }}</span>
+                        </div>
+
+                        <!-- Teamplay -->
+                        <div class="option-row clickable" onclick="cycle_cvar('teamplay', 1)">
+                            <span class="option-label">Teamplay</span>
+                            <span class="option-value">{{ teamplay_label }}</span>
+                        </div>
+
+                        <!-- Skill -->
+                        <div class="option-row clickable" onclick="cycle_cvar('skill', 1)">
+                            <span class="option-label">Skill</span>
+                            <span class="option-value">{{ skill_label }}</span>
+                        </div>
+
+                        <!-- Frag Limit -->
+                        <div class="option-row clickable" onclick="cycle_cvar('fraglimit', 1)">
+                            <span class="option-label">Frag Limit</span>
+                            <span class="option-value">{{ fraglimit_label }}</span>
+                        </div>
+
+                        <!-- Time Limit -->
+                        <div class="option-row clickable" onclick="cycle_cvar('timelimit', 1)">
+                            <span class="option-label">Time Limit</span>
+                            <span class="option-value">{{ timelimit_label }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item primary" onclick="host_game('map-name')">
+                        Start Server
+                    </button>
+
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

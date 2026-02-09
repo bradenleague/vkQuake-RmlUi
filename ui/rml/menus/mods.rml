@@ -1,0 +1,46 @@
+<rml>
+<head>
+    <title>Mods</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="game">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Mods</h2>
+                </div>
+
+                <div class="scroll-area">
+                    <div class="option-list">
+                        <div data-for="mod : mods">
+                            <div class="save-slot" data-event-click="select_mod(mod.name)">
+                                <div class="save-slot-info">
+                                    <div class="save-slot-name">{{ mod.display_name }}</div>
+                                    <div class="save-slot-details">{{ mod.name }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div data-if="num_mods == 0">
+                            <div class="save-slot">
+                                <div class="save-slot-info">
+                                    <div class="save-slot-details save-slot-empty">No mods found</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <button class="btn" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

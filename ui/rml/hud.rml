@@ -1,0 +1,59 @@
+<rml>
+  <head>
+    <title>vkQuake RmlUI - HUD</title>
+    <link type="text/rcss" href="../rcss/base.rcss" />
+    <link type="text/rcss" href="../rcss/hud.rcss" />
+  </head>
+  <body data-model="game" class="hud-overlay">
+    <!-- Crosshair -->
+    <div id="crosshair">
+      <div class="dot"></div>
+      <div class="line-h line-left"></div>
+      <div class="line-h line-right"></div>
+      <div class="line-v line-top"></div>
+      <div class="line-v line-bottom"></div>
+    </div>
+
+    <!-- Messages -->
+    <div id="messages">
+      <!-- Messages populated dynamically -->
+    </div>
+
+    <!-- Keys (above weapon info, right side) -->
+    <div id="simple-keys">
+      <span class="simple-key" data-class-owned="has_key1">S</span>
+      <span class="simple-key gold" data-class-owned="has_key2">G</span>
+    </div>
+
+    <!-- Weapon info -->
+    <div id="weapon-info">
+      <span id="weapon-name">{{ weapon_label }}</span>
+    </div>
+
+    <!-- Powerups (above status bar, left side) -->
+    <div id="simple-powerups">
+      <span class="simple-powerup quad" data-if="has_quad">QUAD</span>
+      <span class="simple-powerup pent" data-if="has_invulnerability">PENT</span>
+      <span class="simple-powerup ring" data-if="has_invisibility">RING</span>
+      <span class="simple-powerup suit" data-if="has_suit">SUIT</span>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <div id="health" class="stat-group">
+        <span class="stat-value">{{ health }}</span>
+        <span class="stat-label">HP</span>
+      </div>
+
+      <div id="armor" class="stat-group">
+        <span class="stat-value">{{ armor }}</span>
+        <span class="stat-label">AR</span>
+      </div>
+
+      <div id="ammo" class="stat-group">
+        <span class="stat-value">{{ ammo }}</span>
+        <span class="stat-label">AM</span>
+      </div>
+    </div>
+  </body>
+</rml>

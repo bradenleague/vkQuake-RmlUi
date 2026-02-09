@@ -1,0 +1,33 @@
+<rml>
+<head>
+    <title>Reset Configuration</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container narrow">
+            <div class="panel dialog">
+                <h2 style="margin-bottom: 24dp;">Reset Configuration?</h2>
+
+                <p class="dialog-message">
+                    This will reset all settings to their default values.
+                    Your key bindings will also be reset.
+                </p>
+
+                <div class="dialog-buttons">
+                    <button class="menu-item danger" onclick="command('resetcfg'); command('exec default.cfg'); command('ui_use_rmlui_menus 1'); close()">
+                        Yes, Reset
+                    </button>
+                    <button class="menu-item" onclick="close()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

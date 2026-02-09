@@ -1,0 +1,156 @@
+<rml>
+<head>
+    <title>Graphics Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="cvars">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Graphics Options</h2>
+                </div>
+
+                <div class="scroll-area" style="max-height: 450dp;">
+                    <div class="option-list">
+                        <div class="section-header">Display</div>
+
+                        <!-- Resolution / Video Mode -->
+                        <div class="option-row clickable" onclick="navigate('options_video')">
+                            <span class="option-label">Video Mode</span>
+                            <span class="option-value">Configure...</span>
+                        </div>
+
+                        <!-- Max FPS -->
+                        <div class="option-row">
+                            <span class="option-label">Max FPS</span>
+                            <input type="range" class="range" min="30" max="1000" step="10"
+                                   data-value="max_fps"
+                                   onchange="cvar_changed('max_fps')" />
+                        </div>
+
+                        <!-- Field of View -->
+                        <div class="option-row">
+                            <span class="option-label">Field of View</span>
+                            <input type="range" class="range" min="50" max="130" step="5"
+                                   data-value="fov"
+                                   onchange="cvar_changed('fov')" />
+                        </div>
+
+                        <div class="section-header">Image Quality</div>
+
+                        <!-- Gamma -->
+                        <div class="option-row">
+                            <span class="option-label">Gamma</span>
+                            <input type="range" class="range" min="0.5" max="2.0" step="0.05"
+                                   data-value="gamma"
+                                   onchange="cvar_changed('gamma')" />
+                        </div>
+
+                        <!-- Contrast -->
+                        <div class="option-row">
+                            <span class="option-label">Contrast</span>
+                            <input type="range" class="range" min="0.5" max="2.0" step="0.05"
+                                   data-value="contrast"
+                                   onchange="cvar_changed('contrast')" />
+                        </div>
+
+                        <!-- 8-bit Color -->
+                        <div class="option-row clickable" onclick="cycle_cvar('palettize', 1)">
+                            <span class="option-label">8-bit Color</span>
+                            <span class="option-value" data-if="palettize">On</span>
+                            <span class="option-value" data-if="!palettize">Off</span>
+                        </div>
+
+                        <div class="section-header">Texture Quality</div>
+
+                        <!-- Texture Quality -->
+                        <div class="option-row clickable" onclick="cycle_cvar('texture_quality', 1)">
+                            <span class="option-label">Texture Quality</span>
+                            <span class="option-value">{{ texture_quality_label }}</span>
+                        </div>
+
+                        <!-- Texture Filter -->
+                        <div class="option-row clickable" onclick="cycle_cvar('texture_filter', 1)">
+                            <span class="option-label">Texture Filter</span>
+                            <span class="option-value">{{ texture_filter_label }}</span>
+                        </div>
+
+                        <!-- Anisotropic Filtering -->
+                        <div class="option-row clickable" onclick="cycle_cvar('aniso', 1)">
+                            <span class="option-label">Anisotropic Filtering</span>
+                            <span class="option-value">{{ aniso_label }}</span>
+                        </div>
+
+                        <div class="section-header">Anti-Aliasing</div>
+
+                        <!-- Anti-Aliasing Samples -->
+                        <div class="option-row clickable" onclick="cycle_cvar('msaa', 1)">
+                            <span class="option-label">MSAA Samples</span>
+                            <span class="option-value">{{ msaa_label }}</span>
+                        </div>
+
+                        <!-- Anti-Aliasing Mode -->
+                        <div class="option-row clickable" onclick="cycle_cvar('aa_mode', 1)">
+                            <span class="option-label">AA Mode</span>
+                            <span class="option-value">{{ aa_mode_label }}</span>
+                        </div>
+
+                        <!-- Render Scale -->
+                        <div class="option-row clickable" onclick="cycle_cvar('render_scale', 1)">
+                            <span class="option-label">Render Scale</span>
+                            <span class="option-value">{{ render_scale_label }}</span>
+                        </div>
+
+                        <div class="section-header">Effects</div>
+
+                        <!-- Particles -->
+                        <div class="option-row clickable" onclick="cycle_cvar('particles', 1)">
+                            <span class="option-label">Particles</span>
+                            <span class="option-value">{{ particles_label }}</span>
+                        </div>
+
+                        <!-- Dynamic Lights -->
+                        <div class="option-row clickable" onclick="cycle_cvar('dynamic_lights', 1)">
+                            <span class="option-label">Dynamic Lights</span>
+                            <span class="option-value" data-if="dynamic_lights">On</span>
+                            <span class="option-value" data-if="!dynamic_lights">Off</span>
+                        </div>
+
+                        <!-- Underwater Effects -->
+                        <div class="option-row clickable" onclick="cycle_cvar('underwater_fx', 1)">
+                            <span class="option-label">Underwater Effects</span>
+                            <span class="option-value" data-if="underwater_fx">On</span>
+                            <span class="option-value" data-if="!underwater_fx">Off</span>
+                        </div>
+
+                        <div class="section-header">Models</div>
+
+                        <!-- Enhanced Models -->
+                        <div class="option-row clickable" onclick="cycle_cvar('enhanced_models', 1)">
+                            <span class="option-label">Enhanced Models</span>
+                            <span class="option-value" data-if="enhanced_models">On</span>
+                            <span class="option-value" data-if="!enhanced_models">Off</span>
+                        </div>
+
+                        <!-- Model Interpolation -->
+                        <div class="option-row clickable" onclick="cycle_cvar('model_interpolation', 1)">
+                            <span class="option-label">Model Interpolation</span>
+                            <span class="option-value" data-if="model_interpolation">On</span>
+                            <span class="option-value" data-if="!model_interpolation">Off</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <button class="btn" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

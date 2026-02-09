@@ -1,0 +1,172 @@
+<rml>
+<head>
+    <title>Game Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="cvars">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Game Options</h2>
+                </div>
+
+                <div class="scroll-area" style="max-height: 450dp;">
+                    <div class="option-list">
+                        <div class="section-header">Interface</div>
+
+                        <!-- Interface Scale -->
+                        <div class="option-row">
+                            <span class="option-label">Interface Scale</span>
+                            <input type="range" class="range" min="1" max="4" step="0.5"
+                                   data-value="ui_scale"
+                                   onchange="cvar_changed('ui_scale')" />
+                        </div>
+
+                        <!-- HUD Opacity -->
+                        <div class="option-row">
+                            <span class="option-label">HUD Opacity</span>
+                            <input type="range" class="range" min="0" max="1" step="0.1"
+                                   data-value="hud_opacity"
+                                   onchange="cvar_changed('hud_opacity')" />
+                        </div>
+
+                        <!-- Crosshair -->
+                        <div class="option-row clickable" onclick="cycle_cvar('crosshair', 1)">
+                            <span class="option-label">Crosshair</span>
+                            <span class="option-value">{{ crosshair_label }}</span>
+                        </div>
+
+                        <!-- HUD Style -->
+                        <div class="option-row clickable" onclick="cycle_cvar('hud_style', 1)">
+                            <span class="option-label">HUD Style</span>
+                            <span class="option-value">{{ hud_style_label }}</span>
+                        </div>
+
+                        <!-- Modern HUD -->
+                        <div class="option-row clickable" onclick="cycle_cvar('rmlui_hud', 1)">
+                            <span class="option-label">Modern HUD</span>
+                            <span class="option-value" data-if="rmlui_hud">On</span>
+                            <span class="option-value" data-if="!rmlui_hud">Off</span>
+                        </div>
+
+                        <!-- Modern Menus -->
+                        <div class="option-row clickable" onclick="cycle_cvar('rmlui_menus', 1)">
+                            <span class="option-label">Modern Menus</span>
+                            <span class="option-value" data-if="rmlui_menus">On</span>
+                            <span class="option-value" data-if="!rmlui_menus">Off</span>
+                        </div>
+
+                        <!-- Show FPS -->
+                        <div class="option-row clickable" onclick="cycle_cvar('show_fps', 1)">
+                            <span class="option-label">Show FPS</span>
+                            <span class="option-value" data-if="show_fps">On</span>
+                            <span class="option-value" data-if="!show_fps">Off</span>
+                        </div>
+
+                        <div class="section-header">Controls</div>
+
+                        <!-- Mouse Speed -->
+                        <div class="option-row">
+                            <span class="option-label">Mouse Speed</span>
+                            <input type="range" class="range" min="1" max="20" step="0.5"
+                                   data-value="sensitivity"
+                                   onchange="cvar_changed('sensitivity')" />
+                        </div>
+
+                        <!-- Invert Mouse -->
+                        <div class="option-row clickable" onclick="cycle_cvar('invert_mouse', 1)">
+                            <span class="option-label">Invert Mouse</span>
+                            <span class="option-value" data-if="invert_mouse">On</span>
+                            <span class="option-value" data-if="!invert_mouse">Off</span>
+                        </div>
+
+                        <!-- Mouse Filter -->
+                        <div class="option-row clickable" onclick="cycle_cvar('m_filter', 1)">
+                            <span class="option-label">Mouse Filter</span>
+                            <span class="option-value" data-if="m_filter">On</span>
+                            <span class="option-value" data-if="!m_filter">Off</span>
+                        </div>
+
+                        <!-- Always Run -->
+                        <div class="option-row clickable" onclick="cycle_cvar('always_run', 1)">
+                            <span class="option-label">Always Run</span>
+                            <span class="option-value" data-if="always_run">On</span>
+                            <span class="option-value" data-if="!always_run">Off</span>
+                        </div>
+
+                        <!-- Auto Aim -->
+                        <div class="option-row clickable" onclick="cycle_cvar('sv_aim', 1)">
+                            <span class="option-label">Auto Aim</span>
+                            <span class="option-value">{{ sv_aim_label }}</span>
+                        </div>
+
+                        <div class="section-header">View</div>
+
+                        <!-- View Bob -->
+                        <div class="option-row">
+                            <span class="option-label">View Bob</span>
+                            <input type="range" class="range" min="0" max="0.04" step="0.004"
+                                   data-value="view_bob"
+                                   onchange="cvar_changed('view_bob')" />
+                        </div>
+
+                        <!-- View Roll -->
+                        <div class="option-row">
+                            <span class="option-label">View Roll</span>
+                            <input type="range" class="range" min="0" max="4" step="0.5"
+                                   data-value="view_roll"
+                                   onchange="cvar_changed('view_roll')" />
+                        </div>
+
+                        <!-- Gun Kick -->
+                        <div class="option-row clickable" onclick="cycle_cvar('gun_kick', 1)">
+                            <span class="option-label">Gun Kick</span>
+                            <span class="option-value">{{ gun_kick_label }}</span>
+                        </div>
+
+                        <!-- Show Gun -->
+                        <div class="option-row clickable" onclick="cycle_cvar('show_gun', 1)">
+                            <span class="option-label">Show Gun</span>
+                            <span class="option-value" data-if="show_gun">On</span>
+                            <span class="option-value" data-if="!show_gun">Off</span>
+                        </div>
+
+                        <div class="section-header">Loading</div>
+
+                        <!-- Auto Load -->
+                        <div class="option-row clickable" onclick="cycle_cvar('auto_load', 1)">
+                            <span class="option-label">Auto Load</span>
+                            <span class="option-value" data-if="auto_load">On</span>
+                            <span class="option-value" data-if="!auto_load">Off</span>
+                        </div>
+
+                        <!-- Startup Demos -->
+                        <div class="option-row clickable" onclick="cycle_cvar('startup_demos', 1)">
+                            <span class="option-label">Startup Demos</span>
+                            <span class="option-value" data-if="startup_demos">On</span>
+                            <span class="option-value" data-if="!startup_demos">Off</span>
+                        </div>
+
+                        <div class="section-header">Difficulty</div>
+
+                        <!-- Skill Level -->
+                        <div class="option-row clickable" onclick="cycle_cvar('skill', 1)">
+                            <span class="option-label">Skill</span>
+                            <span class="option-value">{{ skill_label }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <button class="btn" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

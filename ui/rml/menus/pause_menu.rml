@@ -1,0 +1,25 @@
+<rml>
+<head>
+    <title>Paused</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/main_menu.rcss"/>
+</head>
+<body id="main-menu">
+
+    <div id="center-wrapper">
+        <div id="menu-content">
+            <h1 id="game-title">PAUSED</h1>
+
+            <div id="menu-buttons">
+                <button class="btn-primary" onclick="close_all()">RESUME</button>
+                <button class="btn" onclick="navigate('save_game')">SAVE GAME</button>
+                <button class="btn" onclick="navigate('load_game')">LOAD GAME</button>
+                <button class="btn" onclick="navigate('options')">OPTIONS</button>
+                <button class="btn" onclick="main_menu()">MAIN MENU</button>
+                <button class="btn-quit" onclick="navigate('quit')">QUIT</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

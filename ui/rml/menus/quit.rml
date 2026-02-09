@@ -1,0 +1,33 @@
+<rml>
+<head>
+    <title>Quit</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container narrow">
+            <div class="panel dialog">
+                <h2 style="margin-bottom: 24dp;">Quit Game?</h2>
+
+                <p class="dialog-message">
+                    Are you sure you want to quit?
+                    Any unsaved progress will be lost.
+                </p>
+
+                <div class="dialog-buttons">
+                    <button class="menu-item danger" onclick="quit()">
+                        Yes, Quit
+                    </button>
+                    <button class="menu-item" onclick="close()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

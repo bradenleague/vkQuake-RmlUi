@@ -1,0 +1,255 @@
+/*
+ * vkQuake RmlUI - Widget Stylesheet
+ *
+ * Brutalist design: monochrome + Quake red accent.
+ * Styles for form elements: buttons, sliders, checkboxes, inputs, etc.
+ * Import after base.rcss.
+ */
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+button, .btn {
+    display: inline-block;
+    background-color: transparent;
+    border: 2dp #ffffff;
+    padding: 10dp 20dp;
+    color: #ffffff;
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1dp;
+    cursor: pointer;
+    transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+}
+
+button:hover, .btn:hover {
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+}
+
+button:active, .btn:active {
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+}
+
+button:disabled, .btn:disabled {
+    background-color: transparent;
+    border-color: #333333;
+    color: #444444;
+    cursor: default;
+}
+
+button:disabled:hover, .btn:disabled:hover {
+    background-color: transparent;
+    border-color: #333333;
+    color: #444444;
+}
+
+/* Button variants */
+.btn-primary {
+    background-color: transparent;
+    border-color: #8b0000;
+    color: #8b0000;
+}
+
+.btn-primary:hover {
+    background-color: #8b0000;
+    border-color: #8b0000;
+    color: #000000;
+}
+
+.btn-danger {
+    background-color: transparent;
+    border-color: #ff3333;
+    color: #ff3333;
+}
+
+.btn-danger:hover {
+    background-color: #ff3333;
+    border-color: #ff3333;
+    color: #ffffff;
+}
+
+.btn-ghost {
+    background-color: transparent;
+    border-color: #333333;
+    color: #666666;
+}
+
+.btn-ghost:hover {
+    background-color: #1a1a1a;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+/* ============================================
+   Text Inputs
+   ============================================ */
+
+input.text, textarea, .input {
+    display: block;
+    width: 100%;
+    background-color: transparent;
+    border-width: 0;
+    border-bottom: 2dp #333333;
+    padding: 10dp 4dp;
+    color: #ffffff;
+    font-size: 16dp;
+    font-family: LatoLatin;
+}
+
+input.text:hover, textarea:hover, .input:hover {
+    border-bottom-color: #666666;
+}
+
+input.text:focus, textarea:focus, .input:focus {
+    border-bottom-color: #8b0000;
+}
+
+input.text:disabled, textarea:disabled, .input:disabled {
+    border-bottom-color: #1a1a1a;
+    color: #444444;
+}
+
+textarea {
+    min-height: 100dp;
+}
+
+/* ============================================
+   Checkboxes
+   ============================================ */
+
+input.checkbox {
+    width: 20dp;
+    height: 20dp;
+    background-color: transparent;
+    border: 2dp #ffffff;
+    cursor: pointer;
+}
+
+input.checkbox:hover {
+    border-color: #8b0000;
+}
+
+input.checkbox:checked {
+    background-color: #8b0000;
+    border-color: #8b0000;
+}
+
+/* ============================================
+   Radio Buttons
+   ============================================ */
+
+input.radio {
+    width: 20dp;
+    height: 20dp;
+    background-color: transparent;
+    border: 2dp #ffffff;
+    border-radius: 10dp;
+    cursor: pointer;
+}
+
+input.radio:hover {
+    border-color: #8b0000;
+}
+
+input.radio:checked {
+    background-color: #8b0000;
+    border-color: #8b0000;
+}
+
+/* ============================================
+   Sliders / Range Inputs
+   ============================================ */
+
+input.range {
+    height: 24dp;
+}
+
+input.range slidertrack {
+    height: 2dp;
+    background-color: #333333;
+    border-width: 0;
+}
+
+input.range sliderbar {
+    width: 16dp;
+    height: 16dp;
+    background-color: #ffffff;
+    border-width: 0;
+    margin-top: -7dp;
+}
+
+input.range sliderbar:hover {
+    background-color: #8b0000;
+}
+
+input.range sliderbar:active {
+    background-color: #8b0000;
+}
+
+input.range sliderarrowdec,
+input.range sliderarrowinc {
+    width: 0;
+    display: none;
+}
+
+/* ============================================
+   Tooltip
+   ============================================ */
+
+.tooltip {
+    position: absolute;
+    background-color: #111111;
+    border: 2dp #ffffff;
+    padding: 8dp 12dp;
+    font-size: 14dp;
+    color: #ffffff;
+    max-width: 250dp;
+    pointer-events: none;
+    animation: fade-in 0.15s ease-out;
+    z-index: 1000;
+}
+
+/* ============================================
+   Form Layout Helpers
+   ============================================ */
+
+.form-group {
+    margin-bottom: 16dp;
+}
+
+.form-label {
+    display: block;
+    font-size: 14dp;
+    color: #666666;
+    margin-bottom: 6dp;
+}
+
+.form-hint {
+    font-size: 12dp;
+    color: #666666;
+    margin-top: 4dp;
+}
+
+.form-error {
+    font-size: 12dp;
+    color: #ff3333;
+    margin-top: 4dp;
+}
+
+.form-row {
+    display: flex;
+    gap: 16dp;
+    margin-bottom: 16dp;
+}
+
+.form-row > * {
+    flex: 1;
+}

@@ -1,0 +1,52 @@
+<rml>
+<head>
+    <title>Load Game</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="game">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Load Game</h2>
+                </div>
+
+                <div class="scroll-area">
+                    <div class="option-list">
+                        <!-- Quick Save/Load -->
+                        <div class="save-slot" onclick="load_game('quick')">
+                            <div class="save-slot-info">
+                                <div class="save-slot-name">Quick Save</div>
+                                <div class="save-slot-details">Press F9 to quick load</div>
+                            </div>
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                        <!-- Dynamic slots from engine save scan -->
+                        <div data-for="slot : save_slots">
+                            <div class="save-slot" data-event-click="load_slot(slot.slot_id)">
+                                <div class="save-slot-info">
+                                    <div class="save-slot-name">Slot {{ slot.slot_number + 1 }}</div>
+                                    <div class="save-slot-details"
+                                         data-class-save-slot-empty="!slot.is_loadable">
+                                        {{ slot.description }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <button class="btn" onclick="close()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

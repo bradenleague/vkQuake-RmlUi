@@ -1,0 +1,509 @@
+/*
+ * vkQuake RmlUI - Menu Stylesheet
+ *
+ * Brutalist design: monochrome + Quake red accent.
+ * Styles for options, singleplayer, multiplayer, load/save, dialogs, keybinds.
+ * Import after base.rcss.
+ */
+
+/* ============================================
+   Menu Container
+   ============================================ */
+
+.menu-overlay {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.92);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fade-in 0.15s ease-out;
+}
+
+.menu-container {
+    width: 500dp;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    display: block;
+}
+
+.menu-container.wide {
+    width: 700dp;
+}
+
+.menu-container.narrow {
+    width: 350dp;
+}
+
+/* ============================================
+   Panel Styles
+   ============================================ */
+
+.panel {
+    background-color: #111111;
+    border-left: 3dp #8b0000;
+    padding: 32dp;
+    width: 100%;
+    display: block;
+}
+
+.panel-header {
+    border-bottom: 2dp #333333;
+    padding: 0 0 16dp 0;
+    margin-bottom: 24dp;
+    display: block;
+}
+
+.panel-header h1 {
+    margin: 0;
+    font-family: Space Grotesk;
+    font-size: 32dp;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 4dp;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-family: Space Grotesk;
+    font-size: 32dp;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 4dp;
+}
+
+.panel-footer {
+    border-top: 1dp #333333;
+    padding: 16dp 0 0 0;
+    margin-top: 24dp;
+    display: block;
+}
+
+/* ============================================
+   Menu Navigation
+   ============================================ */
+
+.menu-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.menu-item {
+    display: block;
+    background-color: transparent;
+    border-left: 3dp transparent;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    padding: 14dp 20dp;
+    color: #ffffff;
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 1dp;
+    cursor: pointer;
+    transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.menu-item:hover {
+    background-color: #1a1a1a;
+    border-left: 3dp #8b0000;
+    color: #ffffff;
+}
+
+.menu-item:active {
+    background-color: #8b0000;
+    border-left: 3dp #8b0000;
+    color: #000000;
+}
+
+.menu-item:disabled {
+    background-color: transparent;
+    color: #444444;
+    cursor: default;
+}
+
+.menu-item:disabled:hover {
+    background-color: transparent;
+    border-left: 3dp transparent;
+    color: #444444;
+}
+
+/* Primary menu item */
+.menu-item.primary {
+    color: #8b0000;
+    font-size: 15dp;
+}
+
+.menu-item.primary:hover {
+    background-color: #1a1a1a;
+    color: #b30000;
+}
+
+.menu-item.primary:active {
+    background-color: #8b0000;
+    color: #000000;
+}
+
+/* Danger menu item */
+.menu-item.danger {
+    color: #ff3333;
+}
+
+.menu-item.danger:hover {
+    background-color: #ff3333;
+    border-left: 3dp #ff3333;
+    color: #ffffff;
+}
+
+/* Secondary menu item */
+.menu-item.secondary {
+    color: #666666;
+    font-size: 13dp;
+    padding: 10dp 20dp;
+}
+
+.menu-item.secondary:hover {
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
+
+/* ============================================
+   Option Rows (for settings menus)
+   ============================================ */
+
+.option-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+}
+
+.option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10dp 12dp;
+    border-bottom: 1dp #1a1a1a;
+    width: 100%;
+    transition: background-color 0.1s;
+}
+
+.option-label {
+    flex: 0 0 220dp;
+    color: #ffffff;
+    font-size: 16dp;
+}
+
+.option-row input.range {
+    display: block;
+    width: 260dp;
+    min-width: 200dp;
+    margin-left: 16dp;
+    flex: 1 1 260dp;
+    cursor: pointer;
+}
+
+.option-row:hover {
+    background-color: #1a1a1a;
+}
+
+.option-value {
+    color: #8b0000;
+    font-size: 16dp;
+    min-width: 120dp;
+    text-align: right;
+}
+
+.option-row.clickable {
+    cursor: pointer;
+}
+
+.option-row.clickable:hover .option-value {
+    color: #b30000;
+}
+
+/* ============================================
+   Section Dividers
+   ============================================ */
+
+.section-divider {
+    height: 2dp;
+    background-color: #333333;
+    margin: 20dp 0;
+}
+
+.section-header {
+    font-family: Space Grotesk;
+    font-size: 18dp;
+    font-weight: bold;
+    color: #8b0000;
+    text-transform: uppercase;
+    letter-spacing: 2dp;
+    margin-top: 24dp;
+    margin-bottom: 12dp;
+    padding-bottom: 8dp;
+    border-bottom: 1dp #333333;
+}
+
+/* ============================================
+   Dialog/Modal Styles
+   ============================================ */
+
+.dialog {
+    width: 100%;
+    text-align: center;
+}
+
+.dialog-message {
+    font-size: 18dp;
+    color: #ffffff;
+    margin-bottom: 24dp;
+    line-height: 1.5;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16dp;
+}
+
+.dialog-buttons .menu-item {
+    min-width: 100dp;
+    border: 2dp #333333;
+    text-align: center;
+}
+
+.dialog-buttons .menu-item:hover {
+    border: 2dp #ffffff;
+    background-color: #1a1a1a;
+}
+
+.dialog-buttons .menu-item.danger {
+    border: 2dp #ff3333;
+    color: #ff3333;
+}
+
+.dialog-buttons .menu-item.danger:hover {
+    background-color: #ff3333;
+    border: 2dp #ff3333;
+    color: #ffffff;
+}
+
+/* ============================================
+   Key Binding Styles
+   ============================================ */
+
+.keybind-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10dp 12dp;
+    border-bottom: 1dp #1a1a1a;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.1s;
+}
+
+.keybind-row:hover {
+    background-color: #1a1a1a;
+}
+
+.keybind-action {
+    color: #ffffff;
+    font-size: 15dp;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.keybind-key {
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    color: #8b0000;
+    background-color: transparent;
+    border: 2dp #333333;
+    padding: 4dp 12dp;
+    min-width: 80dp;
+    text-align: center;
+    flex: 0 0 140dp;
+    text-transform: uppercase;
+}
+
+.keybind-row:hover .keybind-key {
+    border-color: #8b0000;
+}
+
+.keybind-row.capturing .keybind-key {
+    background-color: #8b0000;
+    border-color: #8b0000;
+    color: #000000;
+    animation: blink 1s step-start infinite;
+}
+
+/* ============================================
+   Save/Load Slot Styles
+   ============================================ */
+
+.save-slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12dp 16dp;
+    border-bottom: 1dp #1a1a1a;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.save-slot:hover {
+    background-color: #1a1a1a;
+    border-left: 3dp #8b0000;
+    padding-left: 13dp;
+}
+
+.save-slot-info {
+    flex-grow: 1;
+}
+
+.save-slot-name {
+    font-size: 16dp;
+    color: #ffffff;
+    margin-bottom: 4dp;
+}
+
+.save-slot-details {
+    font-size: 12dp;
+    color: #666666;
+}
+
+.save-slot-empty {
+    color: #444444;
+    font-style: italic;
+}
+
+.save-slot-thumbnail {
+    width: 80dp;
+    height: 60dp;
+    background-color: #1a1a1a;
+    border: 1dp #333333;
+    margin-left: 12dp;
+}
+
+/* ============================================
+   Video Mode Selection List
+   ============================================ */
+
+.mode-option {
+    padding: 8dp 12dp;
+    color: #999999;
+    font-size: 14dp;
+    cursor: pointer;
+    border-bottom: 1dp #1a1a1a;
+    transition: background-color 0.1s, color 0.1s;
+}
+
+.mode-option:hover {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.mode-option.active {
+    color: #8b0000;
+    border-left: 3dp #8b0000;
+    padding-left: 9dp;
+}
+
+/* ============================================
+   Back/Navigation Button
+   ============================================ */
+
+.back-button {
+    position: absolute;
+    top: 24dp;
+    left: 24dp;
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    font-weight: bold;
+    padding: 8dp 16dp;
+    background-color: transparent;
+    border: 2dp #333333;
+    color: #ffffff;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background-color: #1a1a1a;
+    border-color: #ffffff;
+}
+
+/* ============================================
+   Scrollable Content Area
+   ============================================ */
+
+.scroll-area {
+    max-height: 400dp;
+    overflow-y: auto;
+    padding-right: 8dp;
+    width: 100%;
+    display: block;
+}
+
+/* Scrollbar — flat, minimal (shared by scroll-area and menu-container) */
+.scroll-area scrollbarvertical,
+.menu-container scrollbarvertical {
+    width: 8dp;
+    margin-left: 4dp;
+}
+
+.scroll-area scrollbarvertical slidertrack,
+.menu-container scrollbarvertical slidertrack {
+    background-color: #1a1a1a;
+}
+
+.scroll-area scrollbarvertical sliderbar,
+.menu-container scrollbarvertical sliderbar {
+    background-color: #333333;
+    min-height: 30dp;
+}
+
+.scroll-area scrollbarvertical sliderbar:hover,
+.menu-container scrollbarvertical sliderbar:hover {
+    background-color: #8b0000;
+}
+
+/* ============================================
+   Menu Footer
+   ============================================ */
+
+.menu-footer {
+    margin-top: 32dp;
+    padding-top: 20dp;
+    text-align: center;
+}
+
+.menu-title {
+    text-align: center;
+    margin-bottom: 40dp;
+}
+
+.menu-subtitle {
+    font-size: 14dp;
+    color: #666666;
+    letter-spacing: 2dp;
+    text-transform: uppercase;
+}
+
+.menu-version {
+    font-size: 11dp;
+    color: #444444;
+}
+
+.menu-footer .menu-version {
+    margin-top: 16dp;
+}

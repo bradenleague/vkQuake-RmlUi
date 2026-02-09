@@ -1,0 +1,71 @@
+<rml>
+<head>
+    <title>Video Mode</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body data-model="cvars">
+
+    <div class="menu-overlay">
+        <div class="menu-container wide">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Video Mode</h2>
+                </div>
+
+                <!-- Resolution list -->
+                <div class="section-header">Resolution</div>
+                <div class="scroll-area" style="max-height: 250dp;">
+                    <div data-for="mode : video_modes">
+                        <div class="mode-option"
+                             data-class-active="mode.is_current"
+                             data-event-click="select_resolution(mode.width, mode.height)">
+                            {{ mode.label }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="option-list">
+                    <!-- Refresh Rate -->
+                    <div class="option-row clickable" onclick="command('vid_nextrate')">
+                        <span class="option-label">Refresh Rate</span>
+                        <span class="option-value">{{ vid_rate_label }}</span>
+                    </div>
+
+                    <!-- Fullscreen Mode -->
+                    <div class="option-row clickable" onclick="command('vid_nextfullscreen')">
+                        <span class="option-label">Display Mode</span>
+                        <span class="option-value">{{ vid_fullscreen_label }}</span>
+                    </div>
+
+                    <!-- VSync -->
+                    <div class="option-row clickable" onclick="command('vid_nextvsync')">
+                        <span class="option-label">V-Sync</span>
+                        <span class="option-value">{{ vid_vsync_label }}</span>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item primary" onclick="command('vid_test')">
+                        Test Changes
+                    </button>
+
+                    <button class="menu-item" onclick="command('vid_restart')">
+                        Apply Changes
+                    </button>
+
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>

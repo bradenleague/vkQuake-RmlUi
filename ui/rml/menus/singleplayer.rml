@@ -1,0 +1,43 @@
+<rml>
+<head>
+    <title>Single Player</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/menu.rcss"/>
+    <link type="text/rcss" href="../../rcss/widgets.rcss"/>
+</head>
+<body>
+
+    <div class="menu-overlay">
+        <div class="menu-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Single Player</h2>
+                </div>
+
+                <div class="menu-nav">
+                    <button class="menu-item primary" onclick="new_game()">
+                        New Game
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('load_game')">
+                        Load Game
+                    </button>
+
+                    <button class="menu-item" onclick="navigate('save_game')">
+                        Save Game
+                    </button>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="menu-nav">
+                    <button class="menu-item" onclick="close()">
+                        Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</rml>
