@@ -915,6 +915,11 @@ SCR_DrawCrosshair -- johnfitz
 */
 static void SCR_DrawCrosshair (cb_context_t *cbx)
 {
+#ifdef USE_RMLUI
+	extern qboolean rmlui_hud_shown;
+	if (rmlui_hud_shown)
+		return; // RmlUI handles the crosshair
+#endif
 	if (!crosshair.value || scr_viewsize.value >= 130)
 		return;
 

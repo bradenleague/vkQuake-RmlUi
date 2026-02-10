@@ -62,6 +62,16 @@ cvar_t v_idlescale = {"v_idlescale", "0", CVAR_NONE};
 cvar_t crosshair = {"crosshair", "1", CVAR_ARCHIVE};
 cvar_t crosshair_def = {"crosshair_def", "0", CVAR_ARCHIVE};
 
+// Per-weapon crosshair overrides (set by mods in default.cfg, not saved)
+cvar_t crosshair_weapon_axe = {"crosshair_weapon_axe", "0", CVAR_NONE};
+cvar_t crosshair_weapon_sg = {"crosshair_weapon_sg", "0", CVAR_NONE};
+cvar_t crosshair_weapon_ssg = {"crosshair_weapon_ssg", "0", CVAR_NONE};
+cvar_t crosshair_weapon_ng = {"crosshair_weapon_ng", "0", CVAR_NONE};
+cvar_t crosshair_weapon_sng = {"crosshair_weapon_sng", "0", CVAR_NONE};
+cvar_t crosshair_weapon_gl = {"crosshair_weapon_gl", "0", CVAR_NONE};
+cvar_t crosshair_weapon_rl = {"crosshair_weapon_rl", "0", CVAR_NONE};
+cvar_t crosshair_weapon_lg = {"crosshair_weapon_lg", "0", CVAR_NONE};
+
 cvar_t gl_cshiftpercent = {"gl_cshiftpercent", "100", CVAR_NONE};
 cvar_t gl_cshiftpercent_contents = {"gl_cshiftpercent_contents", "100", CVAR_NONE}; // QuakeSpasm
 cvar_t gl_cshiftpercent_damage = {"gl_cshiftpercent_damage", "100", CVAR_NONE};		// QuakeSpasm
@@ -1014,6 +1024,14 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_idlescale);
 	Cvar_RegisterVariable (&crosshair);
 	Cvar_RegisterVariable (&crosshair_def);
+	Cvar_RegisterVariable (&crosshair_weapon_axe);
+	Cvar_RegisterVariable (&crosshair_weapon_sg);
+	Cvar_RegisterVariable (&crosshair_weapon_ssg);
+	Cvar_RegisterVariable (&crosshair_weapon_ng);
+	Cvar_RegisterVariable (&crosshair_weapon_sng);
+	Cvar_RegisterVariable (&crosshair_weapon_gl);
+	Cvar_RegisterVariable (&crosshair_weapon_rl);
+	Cvar_RegisterVariable (&crosshair_weapon_lg);
 	Cvar_RegisterVariable (&gl_cshiftpercent);
 	Cvar_RegisterVariable (&gl_cshiftpercent_contents); // QuakeSpasm
 	Cvar_RegisterVariable (&gl_cshiftpercent_damage);	// QuakeSpasm

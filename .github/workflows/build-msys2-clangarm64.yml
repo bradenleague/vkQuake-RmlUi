@@ -36,6 +36,7 @@ jobs:
           mingw-w64-clang-aarch64-opusfile
           mingw-w64-clang-aarch64-mpg123
           mingw-w64-clang-aarch64-libxmp
+          mingw-w64-clang-aarch64-rlottie
 
     - uses: actions/checkout@v4
       with:

@@ -271,10 +271,10 @@ void CvarBindingManager::RegisterAllBindings ()
 		RegisterEnum ("ambient_level", "ambient", 2, labels);
 	}
 
-	// Game — crosshair (crosshair: 0=Off, 1=Cross, 2=Dot)
+	// Game — crosshair (crosshair: 0=Off, 1=Cross, 2=Dot, 3=Circle, 4=Chevron)
 	{
-		const char *labels[] = {"Off", "Cross", "Dot"};
-		RegisterEnum ("crosshair", "crosshair", 3, labels);
+		const char *labels[] = {"Off", "Cross", "Dot", "Circle", "Chevron"};
+		RegisterEnum ("crosshair", "crosshair", 5, labels);
 	}
 
 	// Game — show FPS (scr_showfps: 0=Off, 1=On)

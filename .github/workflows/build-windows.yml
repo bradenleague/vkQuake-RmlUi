@@ -36,6 +36,7 @@ jobs:
           mingw-w64-ucrt-x86_64-opusfile
           mingw-w64-ucrt-x86_64-mpg123
           mingw-w64-ucrt-x86_64-libxmp
+          mingw-w64-ucrt-x86_64-rlottie
 
     - uses: actions/checkout@v4
       with:

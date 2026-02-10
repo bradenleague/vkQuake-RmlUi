@@ -5,6 +5,7 @@
  */
 
 #include "game_data_model.h"
+#include "cvar_binding.h"
 #include "menu_event_handler.h"
 #include "notification_model.h"
 
@@ -14,6 +15,70 @@
 
 namespace QRmlUI
 {
+
+// ── WeaponInfo lookup table ──────────────────────────────────────────
+// Single source of truth for weapon bitflag → short name / display name.
+// Used by weapon_label binding and per-weapon reticle cvar resolution.
+
+struct WeaponInfo
+{
+	int			bitflag;	  // IT_SHOTGUN, IT_ROCKET_LAUNCHER, etc.
+	const char *short_name;	  // "sg", "rl" — used for cvar name construction
+	const char *display_name; // "SHOTGUN", "ROCKET L." — for weapon_label binding
+};
+
+static const WeaponInfo s_weapons[] = {
+	{IT_AXE, "axe", "AXE"},
+	{IT_SHOTGUN, "sg", "SHOTGUN"},
+	{IT_SUPER_SHOTGUN, "ssg", "SUPER SHOTGUN"},
+	{IT_NAILGUN, "ng", "NAILGUN"},
+	{IT_SUPER_NAILGUN, "sng", "SUPER NAILGUN"},
+	{IT_GRENADE_LAUNCHER, "gl", "GRENADE L."},
+	{IT_ROCKET_LAUNCHER, "rl", "ROCKET L."},
+	{IT_LIGHTNING, "lg", "LIGHTNING"},
+};
+
+// Resolve the effective reticle style from crosshair + weapon overrides.
+// Pure function: Off always wins → weapon override if set → player's crosshair.
+static int ResolveReticleStyle (int active_weapon, ICvarProvider *provider)
+{
+	int crosshair = (int)provider->GetFloat ("crosshair");
+	if (crosshair <= 0)
+		return 0; // Off always wins
+
+	// Check weapon-specific override
+	for (const auto &w : s_weapons)
+	{
+		if (w.bitflag == active_weapon)
+		{
+			std::string cvar_name = std::string ("crosshair_weapon_") + w.short_name;
+			int			override_val = (int)provider->GetFloat (cvar_name.c_str ());
+			if (override_val > 0)
+				return override_val;
+			break;
+		}
+	}
+
+	return crosshair; // Player's fallback
+}
+
+// Map reticle style ID to Lottie asset path (relative to hud.rml).
+static Rml::String ReticleSrcForStyle (int style)
+{
+	switch (style)
+	{
+	case 1:
+		return "../../reticles/cross.json";
+	case 2:
+		return "../../reticles/dot.json";
+	case 3:
+		return "../../reticles/circle.json";
+	case 4:
+		return "../../reticles/chevron.json";
+	default:
+		return "";
+	}
+}
 
 // Global game state
 GameState g_game_state;
@@ -127,41 +192,20 @@ bool GameDataModel::Initialize (Rml::Context *context)
 	constructor.Bind ("face_index", &g_game_state.face_index);
 	constructor.Bind ("face_pain", &g_game_state.face_pain);
 
-	// Computed: weapon label from active_weapon bitflag
+	// Computed: weapon label from active_weapon bitflag (uses WeaponInfo table)
 	constructor.BindFunc (
 		"weapon_label",
 		[] (Rml::Variant &variant)
 		{
-			switch (g_game_state.active_weapon)
+			for (const auto &w : s_weapons)
 			{
-			case IT_AXE:
-				variant = Rml::String ("AXE");
-				break;
-			case 1:
-				variant = Rml::String ("SHOTGUN");
-				break;
-			case 2:
-				variant = Rml::String ("SUPER SHOTGUN");
-				break;
-			case 4:
-				variant = Rml::String ("NAILGUN");
-				break;
-			case 8:
-				variant = Rml::String ("SUPER NAILGUN");
-				break;
-			case 16:
-				variant = Rml::String ("GRENADE L.");
-				break;
-			case 32:
-				variant = Rml::String ("ROCKET L.");
-				break;
-			case 64:
-				variant = Rml::String ("LIGHTNING");
-				break;
-			default:
-				variant = Rml::String ("");
-				break;
+				if (w.bitflag == g_game_state.active_weapon)
+				{
+					variant = Rml::String (w.display_name);
+					return;
+				}
 			}
+			variant = Rml::String ("");
 		});
 
 	// Computed: ammo type label
@@ -194,6 +238,12 @@ bool GameDataModel::Initialize (Rml::Context *context)
 
 	// Computed: is_axe (hide ammo display when wielding axe)
 	constructor.BindFunc ("is_axe", [] (Rml::Variant &variant) { variant = (g_game_state.active_weapon == IT_AXE); });
+
+	// Reticle (crosshair) bindings
+	constructor.Bind ("reticle_style", &g_game_state.reticle_style);
+	constructor.BindFunc (
+		"reticle_src",
+		[] (Rml::Variant &variant) { variant = ReticleSrcForStyle (g_game_state.reticle_style); });
 
 	// Computed: active ammo type booleans for reserves highlight
 	constructor.BindFunc (
@@ -450,6 +500,11 @@ void GameDataModel::Update ()
 	DIRTY_IF_CHANGED (face_index, "face_index")
 	DIRTY_IF_CHANGED (face_pain, "face_pain")
 
+	// Reticle (crosshair)
+	DIRTY_IF_CHANGED (reticle_style, "reticle_style")
+	if (g_game_state.reticle_style != s_prev_state.reticle_style)
+		s_model_handle.DirtyVariable ("reticle_src");
+
 	// Chat input (dirty every frame while active, plus one frame after close)
 	{
 		bool is_chatting = (key_dest == key_message);
@@ -614,6 +669,9 @@ extern "C"
 		int total_seconds = static_cast<int> (game_time);
 		g_game_state.time_minutes = total_seconds / 60;
 		g_game_state.time_seconds = total_seconds % 60;
+
+		// Resolve reticle style from crosshair cvar + per-weapon overrides
+		g_game_state.reticle_style = ResolveReticleStyle (g_game_state.active_weapon, CvarBindingManager::GetProvider ());
 
 		// Calculate face index based on health
 		int health = g_game_state.health;

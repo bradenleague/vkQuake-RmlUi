@@ -98,6 +98,11 @@
     pointer-events: none;
 }
 
+.crosshair lottie {
+    width: 32dp;
+    height: 32dp;
+}
+
 .crosshair-dot {
     width: 4dp;
     height: 4dp;

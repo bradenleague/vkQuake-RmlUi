@@ -70,7 +70,7 @@ extern cvar_t scr_style;
 
 #ifdef USE_RMLUI
 #include "ui_manager.h"
-static qboolean rmlui_hud_shown = false;
+qboolean rmlui_hud_shown = false;
 #endif
 
 void Sbar_MiniDeathmatchOverlay (cb_context_t *cbx);

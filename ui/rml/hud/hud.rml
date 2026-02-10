@@ -145,6 +145,11 @@
         </div>
     </div>
 
+    <!-- ========== Crosshair (center screen) ========== -->
+    <div class="crosshair" data-if="reticle_src != ''">
+        <lottie data-attr-src="reticle_src"/>
+    </div>
+
     <!-- ========== Centerprint (center screen) ========== -->
     <div class="centerprint-area hud-center" data-if="centerprint_visible" data-class-fading="centerprint_fading">
         <div class="centerprint-frame">
