@@ -10,7 +10,7 @@
                 <h1 id="game-title">{{ game_title }}</h1>
 
                 <div id="menu-buttons">
-                    <button class="btn-primary" onclick="new_game()" autofocus>
+                    <button class="btn-primary" onclick="new_game()">
                         NEW GAME
                     </button>
                     <button class="btn" onclick="navigate('singleplayer')">
