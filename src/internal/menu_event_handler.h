@@ -75,6 +75,9 @@ public:
     // Cancel key capture mode (e.g., when Escape pressed during capture)
     static void CancelKeyCapture();
 
+    // Suppress focus navigation sound briefly (call before programmatic focus)
+    static void SuppressFocusSoundBriefly();
+
     // Rml::EventListener interface
     void ProcessEvent(Rml::Event& event) override;
 
@@ -114,6 +117,7 @@ private:
     static bool s_initialized;
     static ICommandExecutor* s_executor;  // Injected command executor
     static double s_last_new_game_time;
+    static double s_focus_sound_suppress_until;
 };
 
 // Event listener that stores an action value and executes it when triggered

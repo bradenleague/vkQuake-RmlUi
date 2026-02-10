@@ -101,6 +101,7 @@ std::string MenuEventHandler::s_key_action;
 bool MenuEventHandler::s_initialized = false;
 ICommandExecutor* MenuEventHandler::s_executor = nullptr;
 double MenuEventHandler::s_last_new_game_time = -1.0;
+double MenuEventHandler::s_focus_sound_suppress_until = -1.0;
 
 void MenuEventHandler::SetExecutor(ICommandExecutor* executor)
 {
@@ -155,6 +156,7 @@ void MenuEventHandler::Shutdown()
     s_capturing_key = false;
     s_key_action.clear();
     s_last_new_game_time = -1.0;
+    s_focus_sound_suppress_until = -1.0;
     s_initialized = false;
 
     Con_DPrintf("MenuEventHandler: Shutdown\n");
@@ -233,12 +235,19 @@ void MenuEventHandler::CancelKeyCapture()
     CvarBindingManager::ClearCapturing();
 }
 
+void MenuEventHandler::SuppressFocusSoundBriefly()
+{
+    s_focus_sound_suppress_until = realtime + 0.05;
+}
+
 void MenuEventHandler::ProcessEvent(Rml::Event& event)
 {
     // Play navigation sound on keyboard-driven focus changes.
     if (event.GetId() == Rml::EventId::Focus) {
         if (event.GetParameter("focus_visible", false)) {
-            S_LocalSound("misc/menu1.wav");
+            if (realtime >= s_focus_sound_suppress_until) {
+                S_LocalSound("misc/menu1.wav");
+            }
         }
         return;
     }
