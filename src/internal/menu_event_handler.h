@@ -28,8 +28,6 @@
 #include <RmlUi/Core.h>
 #include <string>
 #include <functional>
-#include <memory>
-#include <vector>
 #include "../types/command_executor.h"
 
 namespace QRmlUI
@@ -120,35 +118,6 @@ class MenuEventHandler : public Rml::EventListener
 	static ICommandExecutor	 *s_executor; // Injected command executor
 	static double			  s_last_new_game_time;
 	static double			  s_focus_sound_suppress_until;
-};
-
-// Event listener that stores an action value and executes it when triggered
-class ActionEventListener : public Rml::EventListener
-{
-  public:
-	explicit ActionEventListener (const Rml::String &action) : m_action (action) {}
-
-	void ProcessEvent (Rml::Event &event) override;
-
-	// Called when listener is detached - we can clean up here
-	void OnDetach (Rml::Element *element) override;
-
-  private:
-	Rml::String m_action;
-};
-
-// Event instancer to create ActionEventListener for inline event handlers
-// Stores created listeners to manage their lifetime (RmlUI does NOT take ownership)
-class MenuEventInstancer : public Rml::EventListenerInstancer
-{
-  public:
-	Rml::EventListener *InstanceEventListener (const Rml::String &value, Rml::Element *element) override;
-
-	// Clean up all listeners
-	void ReleaseAllListeners ();
-
-  private:
-	std::vector<std::unique_ptr<ActionEventListener>> m_listeners;
 };
 
 } // namespace QRmlUI

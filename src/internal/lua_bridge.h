@@ -23,6 +23,10 @@ void Initialize ();
 // Call each frame from UI_Update(), after GameDataModel::Update().
 void Update ();
 
+// Run Lua test suite from ui/lua/tests/test_runner.lua.
+// Invoked by the 'lua_test' console command.
+void RunTests ();
+
 } // namespace LuaBridge
 } // namespace QRmlUI
 

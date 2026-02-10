@@ -62,6 +62,12 @@ static void UI_ShowWhenReady_f (void);
 static void UI_TickStartup (void);
 int			UI_IsMainMenuStartupPending (void);
 double		UI_StartupBlackoutAlpha (void);
+static void UI_UseRmluiChanged_f (cvar_t *var);
+
+static qboolean UI_IsEnabled (void)
+{
+	return ui_use_rmlui.value != 0.0;
+}
 
 /* Console commands for RmlUI */
 static void UI_Toggle_f (void)
@@ -105,6 +111,11 @@ static void UI_Reload_f (void)
 static void UI_ReloadCSS_f (void)
 {
 	UI_ReloadStyleSheets ();
+}
+
+static void UI_LuaTest_f (void)
+{
+	UI_RunLuaTests ();
 }
 
 /* Open an RmlUI menu - sets key_dest and captures mouse */
@@ -175,6 +186,15 @@ static void UI_ShowWhenReady_f (void)
  * Replaces UI_TryOpenPendingMainMenu + UI_AutoShowMainMenuIfIdle. */
 static void UI_TickStartup (void)
 {
+	if (!UI_IsEnabled ())
+	{
+		ui_startup.phase = STARTUP_IDLE;
+		ui_startup.settle_until = 0.0;
+		ui_startup.pending_since = 0.0;
+		ui_startup.auto_detect_after = 0.0;
+		return;
+	}
+
 	switch (ui_startup.phase)
 	{
 	case STARTUP_IDLE:
@@ -230,6 +250,15 @@ static void UI_TickStartup (void)
  * can re-evaluate after the new mod's quake.rc runs. */
 void UI_NotifyGameChanged (void)
 {
+	if (!UI_IsEnabled ())
+	{
+		ui_startup.phase = STARTUP_IDLE;
+		ui_startup.settle_until = 0.0;
+		ui_startup.pending_since = 0.0;
+		ui_startup.auto_detect_after = 0.0;
+		return;
+	}
+
 	/* Flush cached documents so the file interface picks up the new mod's
 	 * UI files (or falls back to base) on the next load. */
 	UI_CloseAllMenusImmediate ();
@@ -241,6 +270,8 @@ void UI_NotifyGameChanged (void)
 
 int UI_IsMainMenuStartupPending (void)
 {
+	if (!UI_IsEnabled ())
+		return 0;
 	if (ui_startup.phase == STARTUP_SETTLING || ui_startup.phase == STARTUP_READY)
 		return 1;
 	if (ui_startup.settle_until > 0.0 && realtime < ui_startup.settle_until)
@@ -250,6 +281,8 @@ int UI_IsMainMenuStartupPending (void)
 
 double UI_StartupBlackoutAlpha (void)
 {
+	if (!UI_IsEnabled ())
+		return 0.0;
 	if (ui_startup.phase == STARTUP_SETTLING || ui_startup.phase == STARTUP_READY)
 		return 1.0;
 	if (ui_startup.settle_until <= 0.0 || realtime >= ui_startup.settle_until)
@@ -258,6 +291,30 @@ double UI_StartupBlackoutAlpha (void)
 	if (remaining > UI_STARTUP_FADE_SECS)
 		return 1.0;							 /* solid phase — entrance animation still playing */
 	return remaining / UI_STARTUP_FADE_SECS; /* linear fade-out */
+}
+
+static void UI_UseRmluiChanged_f (cvar_t *var)
+{
+	if (var->value != 0.0)
+	{
+		ui_startup.phase = STARTUP_AUTO_DETECT;
+		ui_startup.auto_detect_after = realtime + UI_AUTO_MENU_DELAY;
+		return;
+	}
+
+	ui_startup.phase = STARTUP_IDLE;
+	ui_startup.settle_until = 0.0;
+	ui_startup.pending_since = 0.0;
+	ui_startup.auto_detect_after = 0.0;
+
+	UI_CloseAllMenusImmediate ();
+	UI_SetVisible (0);
+
+	if (key_dest == key_menu)
+	{
+		IN_Activate ();
+		key_dest = key_game;
+	}
 }
 #endif
 
@@ -1342,6 +1399,7 @@ void Host_Init (void)
 		 * when UI_InitializeVulkan is called from GL_InitDevice */
 		UI_Init (1280, 720, com_basedir); /* Initial size, will resize after VID_Init */
 		/* Register cvars and console commands for RmlUI */
+		Cvar_SetCallback (&ui_use_rmlui, UI_UseRmluiChanged_f);
 		Cvar_RegisterVariable (&ui_use_rmlui);
 		Cmd_AddCommand ("ui_toggle", UI_Toggle_f);
 		Cmd_AddCommand ("ui_show", UI_Show_f);
@@ -1353,6 +1411,7 @@ void Host_Init (void)
 		Cmd_AddCommand ("ui_closemenu", UI_CloseMenu_f);
 		Cmd_AddCommand ("ui_reload", UI_Reload_f);
 		Cmd_AddCommand ("ui_reload_css", UI_ReloadCSS_f);
+		Cmd_AddCommand ("lua_test", UI_LuaTest_f);
 		ui_startup.phase = STARTUP_AUTO_DETECT;
 		ui_startup.auto_detect_after = realtime + UI_AUTO_MENU_DELAY;
 #endif

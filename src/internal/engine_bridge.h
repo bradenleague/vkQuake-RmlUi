@@ -20,8 +20,9 @@ extern "C"
 
 	/* ── Console output ───────────────────────────────────────────────── */
 
-	void Con_Printf (const char *fmt, ...);
-	void Con_DPrintf (const char *fmt, ...);
+	void   Con_Printf (const char *fmt, ...);
+	void   Con_DPrintf (const char *fmt, ...);
+	double Sys_DoubleTime (void);
 
 	/* ── Cvar access ──────────────────────────────────────────────────── */
 

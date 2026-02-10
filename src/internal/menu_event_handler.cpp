@@ -2,9 +2,31 @@
  * vkQuake RmlUI - Menu Event Handler Implementation
  *
  * Handles UI events and executes Quake commands.
+ *
+ * Event ownership contract:
+ *
+ *   data-event-*  (e.g. data-event-click="navigate('options')")
+ *     Always processed by this handler's capture-phase listener.
+ *     Works in both Lua and non-Lua builds.  Preferred for new menus.
+ *
+ *   on* / onclick / data-action  (e.g. onclick="close()")
+ *     NON-LUA builds: processed by this handler as a fallback.
+ *     LUA builds: compiled by RmlUI's Lua EventListenerInstancer into
+ *     Lua closures that call the registered action globals (navigate,
+ *     close, etc.) which route back to ProcessAction().  The fallback
+ *     paths here are #ifdef'd out to prevent double-firing.
+ *
+ *   data-event-click on data-for elements (e.g. load_slot, save_slot)
+ *     Handled by GameDataModel's BindEventCallback.  If these names
+ *     reach ExecuteAction they are silently ignored (not in the
+ *     action registry).
+ *
+ * Mod authoring: use data-event-click for C++ action dispatch and
+ * onclick for Lua scripting.  Do not mix both on the same element.
  */
 
 #include "menu_event_handler.h"
+#include "action_registry.h"
 #include "cvar_binding.h"
 #include "quake_command_executor.h"
 
@@ -302,6 +324,11 @@ void MenuEventHandler::ProcessEvent (Rml::Event &event)
 		}
 	}
 
+	// In Lua builds, onclick/on* attributes are compiled by RmlUI's Lua
+	// EventListenerInstancer and dispatched through Lua globals that call
+	// MenuEventHandler::ProcessAction().  The capture-phase listener here
+	// must ONLY process data-event-* attributes to avoid double-firing.
+#ifndef USE_LUA
 	if (action.empty () && !event_type.empty ())
 	{
 		const Rml::String on_event_attr = "on" + event_type;
@@ -331,6 +358,7 @@ void MenuEventHandler::ProcessEvent (Rml::Event &event)
 			}
 		}
 	}
+#endif // !USE_LUA
 
 	if (action.empty ())
 	{
@@ -430,7 +458,17 @@ void MenuEventHandler::ExecuteAction (const std::string &action)
 	}
 	else
 	{
-		Con_Printf ("MenuEventHandler: Unknown action '%s'\n", func_name.c_str ());
+		// Silently ignore data model event callbacks (load_slot, save_slot,
+		// select_mod) that reach here when triggered via data-event-click.
+		// Only warn for truly unknown actions.
+		if (FindAction (func_name.c_str ()) != nullptr)
+		{
+			Con_Printf ("MenuEventHandler: Unhandled registered action '%s'\n", func_name.c_str ());
+		}
+		else
+		{
+			Con_DPrintf ("MenuEventHandler: Ignoring unknown action '%s' (data model callback?)\n", func_name.c_str ());
+		}
 	}
 }
 
@@ -815,33 +853,6 @@ void MenuEventHandler::ActionLoadMod (const std::string &mod_name)
 	Con_DPrintf ("MenuEventHandler: Loading mod '%s'\n", mod_name.c_str ());
 	ActionCloseAll ();
 	GetExecutor ()->Execute ("game " + SanitizeForConsole (mod_name));
-}
-
-// ActionEventListener implementation
-void ActionEventListener::ProcessEvent (Rml::Event &event)
-{
-	MenuEventHandler::ProcessAction (m_action.c_str ());
-}
-
-void ActionEventListener::OnDetach (Rml::Element *element)
-{
-	// Listener will be cleaned up by MenuEventInstancer
-}
-
-// MenuEventInstancer implementation
-Rml::EventListener *MenuEventInstancer::InstanceEventListener (const Rml::String &value, Rml::Element *element)
-{
-	// Create a new listener and store it - we must manage the lifetime ourselves
-	// RmlUI does NOT take ownership of the returned listener
-	auto				 listener = std::make_unique<ActionEventListener> (value);
-	ActionEventListener *ptr = listener.get ();
-	m_listeners.push_back (std::move (listener));
-	return ptr;
-}
-
-void MenuEventInstancer::ReleaseAllListeners ()
-{
-	m_listeners.clear ();
 }
 
 } // namespace QRmlUI

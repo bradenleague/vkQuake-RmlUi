@@ -2,13 +2,17 @@
  * vkQuake RmlUI - Lua Engine Bridge Implementation
  *
  * Registers two global Lua tables:
- *   game   — read-only mirror of GameState, refreshed each frame
- *   engine — exec(), cvar_get(), cvar_set(), time()
+ *   game   — read-only proxy over a backing table, refreshed each frame
+ *   engine — exec(), cvar_get(), cvar_get_number(), cvar_set(), time()
+ *
+ * The 'game' table uses a metatable proxy so scripts can read fields
+ * (game.health, game.weapon_label) but writes raise a Lua error.
  */
 
 #ifdef USE_LUA
 
 #include "lua_bridge.h"
+#include "action_registry.h"
 #include "game_data_model.h"
 #include "menu_event_handler.h"
 #include "engine_bridge.h"
@@ -27,6 +31,9 @@ namespace LuaBridge
 
 static lua_State *s_lua = nullptr;
 
+// Registry reference to the backing table behind the 'game' proxy.
+static int s_game_backing_ref = LUA_NOREF;
+
 // ── engine.* C functions ────────────────────────────────────────────
 
 static int l_engine_exec (lua_State *L)
@@ -42,6 +49,13 @@ static int l_engine_cvar_get (lua_State *L)
 	const char *name = luaL_checkstring (L, 1);
 	const char *val = Cvar_VariableString (name);
 	lua_pushstring (L, val);
+	return 1;
+}
+
+static int l_engine_cvar_get_number (lua_State *L)
+{
+	const char *name = luaL_checkstring (L, 1);
+	lua_pushnumber (L, Cvar_VariableValue (name));
 	return 1;
 }
 
@@ -97,6 +111,28 @@ static const char *GetWeaponLabel (int active_weapon)
 	return "";
 }
 
+// ── Ammo type label helper (mirrors game_data_model.cpp logic) ──────
+
+static const char *GetAmmoTypeLabel (int active_weapon)
+{
+	switch (active_weapon)
+	{
+	case 1:
+	case 2:
+		return "SHELLS";
+	case 4:
+	case 8:
+		return "NAILS";
+	case 16:
+	case 32:
+		return "ROCKETS";
+	case 64:
+		return "CELLS";
+	default:
+		return "";
+	}
+}
+
 // ── Table field helpers ─────────────────────────────────────────────
 
 static void SetInt (lua_State *L, const char *key, int val)
@@ -115,6 +151,23 @@ static void SetString (lua_State *L, const char *key, const char *val)
 {
 	lua_pushstring (L, val ? val : "");
 	lua_setfield (L, -2, key);
+}
+
+// ── Read-only proxy metatable ───────────────────────────────────────
+
+// __index: delegate reads to the backing table (upvalue 1)
+static int l_game_index (lua_State *L)
+{
+	lua_pushvalue (L, lua_upvalueindex (1)); // backing table
+	lua_pushvalue (L, 2);					 // key
+	lua_gettable (L, -2);
+	return 1;
+}
+
+// __newindex: reject writes
+static int l_game_newindex (lua_State *L)
+{
+	return luaL_error (L, "attempt to write to read-only 'game' table");
 }
 
 // ── Menu action dispatch ────────────────────────────────────────────
@@ -154,13 +207,6 @@ static int l_action_dispatch (lua_State *L)
 	return 0;
 }
 
-// All action function names that menus use in onclick attributes.
-// Each is registered as a Lua global that forwards to MenuEventHandler.
-static const char *s_action_names[] = {
-	"navigate", "command",	 "close",	   "close_all", "quit",		"new_game",	  "load_game",	  "save_game",
-	"bind_key", "main_menu", "connect_to", "host_game", "load_mod", "cycle_cvar", "cvar_changed", nullptr,
-};
-
 // ── Public API ──────────────────────────────────────────────────────
 
 void Initialize ()
@@ -181,6 +227,9 @@ void Initialize ()
 	lua_pushcfunction (s_lua, l_engine_cvar_get);
 	lua_setfield (s_lua, -2, "cvar_get");
 
+	lua_pushcfunction (s_lua, l_engine_cvar_get_number);
+	lua_setfield (s_lua, -2, "cvar_get_number");
+
 	lua_pushcfunction (s_lua, l_engine_cvar_set);
 	lua_setfield (s_lua, -2, "cvar_set");
 
@@ -196,17 +245,45 @@ void Initialize ()
 	lua_newtable (s_lua);
 	lua_setglobal (s_lua, "_frame_callbacks");
 
-	// Create initial empty 'game' table (populated in Update)
+	// Create the read-only 'game' proxy:
+	//   backing = {}          (stored in Lua registry)
+	//   proxy   = {}          (exposed as global 'game')
+	//   proxy's metatable:
+	//     __index    = closure over backing
+	//     __newindex = error
+	//     __metatable = false  (hide metatable)
+
+	// backing table
 	lua_newtable (s_lua);
+	s_game_backing_ref = luaL_ref (s_lua, LUA_REGISTRYINDEX);
+
+	// proxy table
+	lua_newtable (s_lua);
+
+	// metatable
+	lua_newtable (s_lua);
+
+	// __index closure: upvalue is the backing table
+	lua_rawgeti (s_lua, LUA_REGISTRYINDEX, s_game_backing_ref);
+	lua_pushcclosure (s_lua, l_game_index, 1);
+	lua_setfield (s_lua, -2, "__index");
+
+	lua_pushcfunction (s_lua, l_game_newindex);
+	lua_setfield (s_lua, -2, "__newindex");
+
+	lua_pushboolean (s_lua, 0);
+	lua_setfield (s_lua, -2, "__metatable");
+
+	lua_setmetatable (s_lua, -2); // set metatable on proxy
 	lua_setglobal (s_lua, "game");
 
 	// Register menu action functions as Lua globals so existing
 	// onclick="navigate('options')" etc. work with the Lua instancer.
-	for (int i = 0; s_action_names[i] != nullptr; i++)
+	for (int i = 0; i < kActionRegistrySize; i++)
 	{
-		lua_pushstring (s_lua, s_action_names[i]);
+		lua_pushstring (s_lua, kActionRegistry[i].name);
 		lua_pushcclosure (s_lua, l_action_dispatch, 1);
-		lua_setglobal (s_lua, s_action_names[i]);
+		lua_setglobal (s_lua, kActionRegistry[i].name);
 	}
 
 	Con_DPrintf ("LuaBridge: Initialized game/engine/action Lua globals\n");
@@ -219,8 +296,8 @@ void Update ()
 
 	const auto &gs = g_game_state;
 
-	// Build a fresh 'game' table each frame
-	lua_newtable (s_lua);
+	// Push the backing table onto the stack and populate it
+	lua_rawgeti (s_lua, LUA_REGISTRYINDEX, s_game_backing_ref);
 
 	// Core stats
 	SetInt (s_lua, "health", gs.health);
@@ -268,18 +345,32 @@ void Update ()
 	// Armor type
 	SetInt (s_lua, "armor_type", gs.armor_type);
 
-	// Computed fields
+	// Computed fields (parity with GameDataModel)
 	SetString (s_lua, "weapon_label", GetWeaponLabel (gs.active_weapon));
+	SetString (s_lua, "ammo_type_label", GetAmmoTypeLabel (gs.active_weapon));
 	SetBool (s_lua, "is_axe", gs.active_weapon == IT_AXE);
+
+	int w = gs.active_weapon;
+	SetBool (s_lua, "is_shells_weapon", w == 1 || w == 2);
+	SetBool (s_lua, "is_nails_weapon", w == 4 || w == 8);
+	SetBool (s_lua, "is_rockets_weapon", w == 16 || w == 32);
+	SetBool (s_lua, "is_cells_weapon", w == 64);
 
 	// Game state flags
 	SetBool (s_lua, "deathmatch", gs.deathmatch);
 	SetBool (s_lua, "coop", gs.coop);
 	SetBool (s_lua, "intermission", gs.intermission);
+	SetInt (s_lua, "intermission_type", gs.intermission_type);
 
 	// Level info
 	SetString (s_lua, "level_name", gs.level_name.c_str ());
 	SetString (s_lua, "map_name", gs.map_name.c_str ());
+
+	// Game title (from active game directory)
+	{
+		const char *game = COM_GetGameNames (0);
+		SetString (s_lua, "game_title", (game && game[0]) ? game : "QUAKE");
+	}
 
 	// Time
 	SetInt (s_lua, "time_minutes", gs.time_minutes);
@@ -295,10 +386,18 @@ void Update ()
 	SetBool (s_lua, "fire_flash", gs.fire_flash);
 	SetBool (s_lua, "weapon_firing", gs.weapon_firing);
 
+	// Chat input overlay
+	SetBool (s_lua, "chat_active", key_dest == key_message);
+	SetString (s_lua, "chat_prefix", chat_team ? "say_team:" : "say:");
+	{
+		const char *buf = Key_GetChatBuffer ();
+		SetString (s_lua, "chat_text", buf ? buf : "");
+	}
+
 	// Player count
 	SetInt (s_lua, "num_players", gs.num_players);
 
-	lua_setglobal (s_lua, "game");
+	lua_pop (s_lua, 1); // pop backing table
 
 	// Dispatch named frame callbacks
 	lua_getglobal (s_lua, "_frame_callbacks");
@@ -321,6 +420,23 @@ void Update ()
 		// key remains on stack for lua_next
 	}
 	lua_pop (s_lua, 1); // pop _frame_callbacks
+}
+
+void RunTests ()
+{
+	if (!s_lua)
+	{
+		Con_Printf ("LuaBridge::RunTests: No Lua state\n");
+		return;
+	}
+
+	const char *test_path = "ui/lua/tests/test_runner.lua";
+
+	// Use RmlUI's Interpreter to load and run the file through the VFS
+	if (!Rml::Lua::Interpreter::LoadFile (Rml::String (test_path)))
+	{
+		Con_Printf ("LuaBridge::RunTests: Failed to load '%s'\n", test_path);
+	}
 }
 
 } // namespace LuaBridge
