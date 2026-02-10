@@ -696,6 +696,7 @@ extern "C"
 				g_game_state.fire_flash = true;
 				s_fire_flash_time = realtime;
 			}
+			g_game_state.weapon_firing = (wf != 0);
 			s_prev_weaponframe = wf;
 		}
 

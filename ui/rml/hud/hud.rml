@@ -6,8 +6,9 @@
     <link type="text/rcss" href="../../rcss/centerprint.rcss"/>
     <link type="text/rcss" href="../../rcss/notify.rcss"/>
     <link type="text/rcss" href="../../rcss/chat.rcss"/>
+    <script src="../../lua/reticle_controller.lua"/>
 </head>
-<body data-model="game" class="hud-overlay hud-default">
+<body id="hud" data-model="game" class="hud-overlay hud-default">
 
     <!-- ========== Bottom-Left: Health + Armor ========== -->
     <div class="stat-backdrop hud-bottom-left">
@@ -146,9 +147,7 @@
     </div>
 
     <!-- ========== Crosshair (center screen) ========== -->
-    <div class="crosshair" data-if="reticle_style > 0"
-         data-class-firing="fire_flash"
-         data-class-equipping="weapon_show">
+    <div id="crosshair-container" class="crosshair" data-if="reticle_style > 0">
         <!-- Cross (style 1) -->
         <reticle data-if="reticle_style == 1">
             <reticle-line angle="0" />

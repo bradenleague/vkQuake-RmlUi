@@ -59,6 +59,18 @@ static int l_engine_time (lua_State *L)
 	return 1;
 }
 
+static int l_engine_on_frame (lua_State *L)
+{
+	const char *name = luaL_checkstring (L, 1);
+	luaL_checktype (L, 2, LUA_TFUNCTION);
+
+	lua_getglobal (L, "_frame_callbacks");
+	lua_pushvalue (L, 2); // copy the function
+	lua_setfield (L, -2, name);
+	lua_pop (L, 1); // pop _frame_callbacks
+	return 0;
+}
+
 // ── Weapon label helper (mirrors game_data_model.cpp logic) ─────────
 
 static const char *GetWeaponLabel (int active_weapon)
@@ -175,7 +187,14 @@ void Initialize ()
 	lua_pushcfunction (s_lua, l_engine_time);
 	lua_setfield (s_lua, -2, "time");
 
+	lua_pushcfunction (s_lua, l_engine_on_frame);
+	lua_setfield (s_lua, -2, "on_frame");
+
 	lua_setglobal (s_lua, "engine");
+
+	// Create the named frame-callback table
+	lua_newtable (s_lua);
+	lua_setglobal (s_lua, "_frame_callbacks");
 
 	// Create initial empty 'game' table (populated in Update)
 	lua_newtable (s_lua);
@@ -274,11 +293,34 @@ void Update ()
 	SetInt (s_lua, "reticle_style", gs.reticle_style);
 	SetBool (s_lua, "weapon_show", gs.weapon_show);
 	SetBool (s_lua, "fire_flash", gs.fire_flash);
+	SetBool (s_lua, "weapon_firing", gs.weapon_firing);
 
 	// Player count
 	SetInt (s_lua, "num_players", gs.num_players);
 
 	lua_setglobal (s_lua, "game");
+
+	// Dispatch named frame callbacks
+	lua_getglobal (s_lua, "_frame_callbacks");
+	lua_pushnil (s_lua);
+	while (lua_next (s_lua, -2) != 0)
+	{
+		// stack: _frame_callbacks, key, function
+		if (lua_isfunction (s_lua, -1))
+		{
+			if (lua_pcall (s_lua, 0, 0, 0) != 0)
+			{
+				Con_Printf ("LuaBridge: frame callback '%s' error: %s\n", lua_tostring (s_lua, -2), lua_tostring (s_lua, -1));
+				lua_pop (s_lua, 1); // pop error message
+			}
+		}
+		else
+		{
+			lua_pop (s_lua, 1); // pop non-function value
+		}
+		// key remains on stack for lua_next
+	}
+	lua_pop (s_lua, 1); // pop _frame_callbacks
 }
 
 } // namespace LuaBridge

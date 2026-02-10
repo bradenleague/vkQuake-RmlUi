@@ -121,13 +121,25 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
     transition: reticle-radius reticle-gap reticle-length reticle-stroke 0.25s quadratic-out;
 }
 
-/* Fire animation: expand outward */
-.crosshair.firing reticle-line { reticle-gap: 7dp; }
-.crosshair.firing reticle-ring { reticle-radius: 14dp; }
+/* Per-weapon fire animations (Lua toggles the active class) */
+.crosshair.firing-sg  reticle-line { reticle-gap: 7dp; }
+.crosshair.firing-sg  reticle-ring { reticle-radius: 14dp; }
+.crosshair.firing-ssg reticle-line { reticle-gap: 9dp; }
+.crosshair.firing-ssg reticle-ring { reticle-radius: 16dp; }
+.crosshair.firing-ng  reticle-line { reticle-gap: 5dp; }
+.crosshair.firing-ng  reticle-ring { reticle-radius: 12dp; }
+.crosshair.firing-sng reticle-line { reticle-gap: 4dp; }
+.crosshair.firing-sng reticle-ring { reticle-radius: 11dp; }
+.crosshair.firing-gl  reticle-line { reticle-gap: 8dp; }
+.crosshair.firing-gl  reticle-ring { reticle-radius: 15dp; }
+.crosshair.firing-rl  reticle-line { reticle-gap: 8dp; }
+.crosshair.firing-rl  reticle-ring { reticle-radius: 15dp; }
+.crosshair.firing-lg  reticle-line { reticle-gap: 2dp; }
+.crosshair.firing-lg  reticle-ring { reticle-radius: 8dp; }
 
 /* Equip animation: collapse then restore */
-.crosshair.equipping reticle-line { reticle-gap: 1dp; reticle-length: 4dp; }
-.crosshair.equipping reticle-ring { reticle-radius: 4dp; }
+.crosshair.equipping reticle-line { reticle-gap: 1dp; reticle-length: 3dp; }
+.crosshair.equipping reticle-ring { reticle-radius: 3dp; }
 
 /* ============================================
    Level Stats

@@ -143,6 +143,7 @@ struct GameState
 	// Transient animation triggers (reticle class toggles)
 	bool weapon_show = false;
 	bool fire_flash = false;
+	bool weapon_firing = false; // true while weaponframe != 0 (weapon mid-animation)
 
 	// Deathmatch player list (sorted by frags descending)
 	std::vector<PlayerInfo> players;
