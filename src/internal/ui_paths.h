@@ -14,10 +14,8 @@ namespace QRmlUI
 namespace Paths
 {
 
-/* ── HUD documents ────────────────────────────────────────────────── */
-inline constexpr const char *kHudSimple = "ui/rml/hud.rml";
-inline constexpr const char *kHudClassic = "ui/rml/hud/hud_classic.rml";
-inline constexpr const char *kHudModern = "ui/rml/hud/hud_modern.rml";
+/* ── HUD document ─────────────────────────────────────────────────── */
+inline constexpr const char *kHud = "ui/rml/hud.rml";
 
 /* ── HUD overlays ─────────────────────────────────────────────────── */
 inline constexpr const char *kScoreboard = "ui/rml/hud/scoreboard.rml";

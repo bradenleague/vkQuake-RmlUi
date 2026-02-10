@@ -73,7 +73,7 @@ extern "C"
 	void			UI_PopMenu (void);				  /* Pop current menu from stack */
 
 	/* HUD control */
-	void UI_ShowHUD (const char *hud_document); /* NULL = resolve from scr_style */
+	void UI_ShowHUD (const char *hud_document); /* NULL = use default hud.rml */
 	void UI_HideHUD (void);
 	int	 UI_IsHUDVisible (void);
 

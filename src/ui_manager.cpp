@@ -113,20 +113,6 @@ bool IsViewportSettledForMenuEnter ()
 	return (realtime - g_state.last_resize_time) >= MENU_ENTER_RESIZE_SETTLE_SECONDS;
 }
 
-const char *GetHudDocumentFromStyle ()
-{
-	const double style = Cvar_VariableValue ("scr_style");
-	if (style < 1.0)
-	{
-		return QRmlUI::Paths::kHudSimple;
-	}
-	if (style < 2.0)
-	{
-		return QRmlUI::Paths::kHudClassic;
-	}
-	return QRmlUI::Paths::kHudModern;
-}
-
 // Update cached DPI scale from the display, with sqrt dampening and defensive clamping.
 // Raw DPI ratio (e.g. 163/96 = 1.7x) is too aggressive as a straight multiplier —
 // sqrt gives a gentle nudge: 1.7 → 1.30, 1.5 → 1.22, 1.0 → 1.0.
@@ -1177,7 +1163,7 @@ extern "C"
 	{
 		if (!hud_document)
 		{
-			hud_document = GetHudDocumentFromStyle ();
+			hud_document = QRmlUI::Paths::kHud;
 		}
 
 		const bool hud_changed = g_state.current_hud.empty () || g_state.current_hud != hud_document;
@@ -1284,13 +1270,6 @@ extern "C"
 			if (UI_GetInputMode () == UI_INPUT_INACTIVE)
 			{
 				UI_SetInputMode (UI_INPUT_OVERLAY);
-			}
-
-			// Hot-swap HUD document when style cvar changes while in-game.
-			const char *desired_hud = GetHudDocumentFromStyle ();
-			if (g_state.current_hud.empty () || g_state.current_hud != desired_hud)
-			{
-				UI_ShowHUD (desired_hud);
 			}
 		}
 

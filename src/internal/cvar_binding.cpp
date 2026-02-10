@@ -205,10 +205,6 @@ void CvarBindingManager::RegisterAllBindings ()
 	RegisterBool ("r_drawviewmodel", "show_gun");
 	RegisterBool ("cl_startdemos", "startup_demos");
 
-	// Interface
-	RegisterBool ("ui_use_rmlui_hud", "rmlui_hud");
-	RegisterBool ("ui_use_rmlui_menus", "rmlui_menus");
-
 	// ── Enum cvars (cycle_cvar with display labels) ──
 
 	// Graphics — texture quality (gl_picmip: 0=High, 1=Medium, 2=Low)
@@ -303,12 +299,6 @@ void CvarBindingManager::RegisterAllBindings ()
 	{
 		const char *labels[] = {"Off", "On"};
 		RegisterEnum ("autofastload", "auto_load", 2, labels);
-	}
-
-	// Game — HUD style (scr_style: 0=Simple, 1=Classic, 2=Modern)
-	{
-		const char *labels[] = {"Simple", "Classic", "Modern"};
-		RegisterEnum ("scr_style", "hud_style", 3, labels);
 	}
 
 	// Game — skill level (skill: 0=Easy, 1=Normal, 2=Hard, 3=Nightmare)
