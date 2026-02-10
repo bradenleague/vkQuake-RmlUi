@@ -240,16 +240,21 @@ static void UI_TickStartup (void)
 		if (realtime < ui_startup.auto_detect_after)
 			return; /* let startup / game-change commands settle */
 
-		ui_startup.phase = STARTUP_IDLE; /* don't re-enter */
-
 		if (UI_WantsMenuInput ())
+		{
+			ui_startup.phase = STARTUP_IDLE;
 			return; /* menu already open */
-		if (cls.state == ca_connected)
-			return; /* connected to server or playing demo */
-		if (sv.active)
-			return; /* hosting a server */
+		}
+		if (sv.active && !cls.demoplayback)
+		{
+			ui_startup.phase = STARTUP_IDLE;
+			return; /* hosting a real server — don't auto-show menu */
+		}
 
-		Con_DPrintf ("UI_TickStartup: no demo/server active, opening menu\n");
+		/* Queue deferred show.  UI_IsMainMenuShowReady() handles both the
+		 * idle-at-console case (returns true immediately) and the demo-
+		 * playback case (waits for signon + console retract). */
+		Con_DPrintf ("UI_TickStartup: auto-detect queuing menu show\n");
 		ui_startup.phase = STARTUP_SETTLING;
 		ui_startup.pending_since = realtime;
 		return;
