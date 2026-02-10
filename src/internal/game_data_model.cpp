@@ -74,9 +74,9 @@ Rml::String			 GameDataModel::s_prev_gamedir;
 bool				 GameDataModel::s_was_chatting = false;
 
 // Reticle animation transient state
-static double s_weapon_show_time = 0.0;
-static double s_fire_flash_time = 0.0;
-static int	  s_prev_weaponframe = 0;
+static double			s_weapon_show_time = 0.0;
+static double			s_fire_flash_time = 0.0;
+static int				s_prev_weaponframe = 0;
 static constexpr double WEAPON_SHOW_DURATION = 0.15;
 static constexpr double FIRE_FLASH_DURATION = 0.30;
 

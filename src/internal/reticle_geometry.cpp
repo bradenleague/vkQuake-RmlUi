@@ -39,7 +39,7 @@ void GenerateFilledCircle (Rml::Mesh &mesh, Rml::Vector2f center, float radius, 
 	// Perimeter vertices
 	for (int i = 0; i <= segments; ++i)
 	{
-		float angle = 2.0f * PI * (float)i / (float)segments;
+		float		  angle = 2.0f * PI * (float)i / (float)segments;
 		Rml::Vector2f pos = center + Rml::Vector2f (std::cos (angle) * radius, std::sin (angle) * radius);
 		mesh.vertices.push_back (MakeVertex (pos, color));
 	}
@@ -59,8 +59,8 @@ void GenerateRing (Rml::Mesh &mesh, Rml::Vector2f center, float radius, float st
 }
 
 void GenerateArc (
-	Rml::Mesh &mesh, Rml::Vector2f center, float radius, float stroke, float start_angle_deg, float end_angle_deg,
-	Rml::ColourbPremultiplied color, int segments)
+	Rml::Mesh &mesh, Rml::Vector2f center, float radius, float stroke, float start_angle_deg, float end_angle_deg, Rml::ColourbPremultiplied color,
+	int segments)
 {
 	if (radius <= 0.0f || stroke <= 0.0f || segments < 3)
 		return;
@@ -99,9 +99,9 @@ void GenerateArc (
 	// Triangle strip indices (CCW)
 	for (int i = 0; i < arc_segments; ++i)
 	{
-		int i0 = base + i * 2;		  // inner current
-		int o0 = base + i * 2 + 1;	  // outer current
-		int i1 = base + (i + 1) * 2;	  // inner next
+		int i0 = base + i * 2;			 // inner current
+		int o0 = base + i * 2 + 1;		 // outer current
+		int i1 = base + (i + 1) * 2;	 // inner next
 		int o1 = base + (i + 1) * 2 + 1; // outer next
 
 		// Two triangles per segment (CCW)
@@ -115,14 +115,13 @@ void GenerateArc (
 	}
 }
 
-void GenerateRotatedRect (
-	Rml::Mesh &mesh, Rml::Vector2f center, float angle_deg, float gap, float length, float width, Rml::ColourbPremultiplied color)
+void GenerateRotatedRect (Rml::Mesh &mesh, Rml::Vector2f center, float angle_deg, float gap, float length, float width, Rml::ColourbPremultiplied color)
 {
 	if (length <= 0.0f || width <= 0.0f)
 		return;
 
 	// Direction vector (angle_deg: 0 = up, 90 = right)
-	float rad = DegToRad (angle_deg);
+	float		  rad = DegToRad (angle_deg);
 	Rml::Vector2f dir (std::cos (rad), std::sin (rad));
 	Rml::Vector2f perp (-dir.y, dir.x); // perpendicular (rotated 90 CCW)
 

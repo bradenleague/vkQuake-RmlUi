@@ -63,9 +63,8 @@ static Rml::ColourbPremultiplied GetElementColor (Rml::Element *element)
 static bool HasReticlePropertyChange (const Rml::PropertyIdSet &changed)
 {
 	return changed.Contains (ReticlePlugin::PropRadius ()) || changed.Contains (ReticlePlugin::PropStroke ()) ||
-		   changed.Contains (ReticlePlugin::PropLength ()) || changed.Contains (ReticlePlugin::PropWidth ()) ||
-		   changed.Contains (ReticlePlugin::PropGap ()) || changed.Contains (ReticlePlugin::PropStartAngle ()) ||
-		   changed.Contains (ReticlePlugin::PropEndAngle ());
+		   changed.Contains (ReticlePlugin::PropLength ()) || changed.Contains (ReticlePlugin::PropWidth ()) || changed.Contains (ReticlePlugin::PropGap ()) ||
+		   changed.Contains (ReticlePlugin::PropStartAngle ()) || changed.Contains (ReticlePlugin::PropEndAngle ());
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -119,7 +118,7 @@ void ElementReticleDot::GenerateGeometry ()
 {
 	m_geometry_dirty = false;
 
-	float					 radius = ResolveCustomProperty (this, ReticlePlugin::PropRadius (), 2.0f);
+	float					  radius = ResolveCustomProperty (this, ReticlePlugin::PropRadius (), 2.0f);
 	Rml::ColourbPremultiplied color = GetElementColor (this);
 
 	Rml::Mesh mesh = m_geometry.Release (Rml::Geometry::ReleaseMode::ClearMesh);

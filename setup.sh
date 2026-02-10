@@ -112,7 +112,22 @@ else
     ok "PAK files downloaded and extracted"
 fi
 
-# ── 4. Summary ────────────────────────────────────────────────────
+# ── 4. Dev tooling (clang-format 17 for CI-matching format checks) ─
+
+printf "\n${BOLD}Checking dev tooling...${RESET}\n"
+
+if [ -x .venv/bin/clang-format ]; then
+    ok "clang-format 17 already installed (.venv/)"
+elif command -v python3 &>/dev/null; then
+    warn "Installing clang-format 17 into .venv/..."
+    python3 -m venv .venv
+    .venv/bin/pip install -q clang-format==17.0.6
+    ok "clang-format 17 installed — use 'make format' / 'make format-check'"
+else
+    warn "python3 not found — skipping clang-format 17 install (optional)"
+fi
+
+# ── 5. Summary ────────────────────────────────────────────────────
 
 printf "\n${GREEN}${BOLD}Ready!${RESET} Build and run with:\n"
 printf "  ${BOLD}make run${RESET}\n\n"

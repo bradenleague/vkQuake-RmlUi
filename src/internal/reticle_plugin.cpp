@@ -25,11 +25,11 @@ static Rml::PropertyId s_prop_start_angle = Rml::PropertyId::Invalid;
 static Rml::PropertyId s_prop_end_angle = Rml::PropertyId::Invalid;
 
 // Element instancers — kept alive until Rml::Shutdown().
-static Rml::ElementInstancerGeneric<ElementReticle>	   *s_instancer_reticle = nullptr;
-static Rml::ElementInstancerGeneric<ElementReticleDot>	   *s_instancer_dot = nullptr;
-static Rml::ElementInstancerGeneric<ElementReticleLine>	   *s_instancer_line = nullptr;
-static Rml::ElementInstancerGeneric<ElementReticleRing>	   *s_instancer_ring = nullptr;
-static Rml::ElementInstancerGeneric<ElementReticleArc>	   *s_instancer_arc = nullptr;
+static Rml::ElementInstancerGeneric<ElementReticle>		*s_instancer_reticle = nullptr;
+static Rml::ElementInstancerGeneric<ElementReticleDot>	*s_instancer_dot = nullptr;
+static Rml::ElementInstancerGeneric<ElementReticleLine> *s_instancer_line = nullptr;
+static Rml::ElementInstancerGeneric<ElementReticleRing> *s_instancer_ring = nullptr;
+static Rml::ElementInstancerGeneric<ElementReticleArc>	*s_instancer_arc = nullptr;
 
 void ReticlePlugin::Initialise ()
 {

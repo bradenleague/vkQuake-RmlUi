@@ -20,31 +20,31 @@ namespace QRmlUI
 // Container element. No own geometry; children render relative to its content box center.
 class ElementReticle : public Rml::Element
 {
-public:
+  public:
 	RMLUI_RTTI_DefineWithParent (ElementReticle, Rml::Element)
 
-	explicit ElementReticle (const Rml::String &tag);
+		explicit ElementReticle (const Rml::String &tag);
 
-protected:
+  protected:
 	bool GetIntrinsicDimensions (Rml::Vector2f &dimensions, float &ratio) override;
 };
 
 // Filled circle.
 class ElementReticleDot : public Rml::Element
 {
-public:
+  public:
 	RMLUI_RTTI_DefineWithParent (ElementReticleDot, Rml::Element)
 
-	explicit ElementReticleDot (const Rml::String &tag);
+		explicit ElementReticleDot (const Rml::String &tag);
 
-protected:
+  protected:
 	void OnRender () override;
 	void OnResize () override;
 	void OnPropertyChange (const Rml::PropertyIdSet &changed_properties) override;
 	bool GetIntrinsicDimensions (Rml::Vector2f &dimensions, float &ratio) override;
 
-private:
-	void GenerateGeometry ();
+  private:
+	void		  GenerateGeometry ();
 	Rml::Geometry m_geometry;
 	bool		  m_geometry_dirty = true;
 };
@@ -52,20 +52,20 @@ private:
 // Rotated rectangle arm. Direction set via angle="" HTML attribute.
 class ElementReticleLine : public Rml::Element
 {
-public:
+  public:
 	RMLUI_RTTI_DefineWithParent (ElementReticleLine, Rml::Element)
 
-	explicit ElementReticleLine (const Rml::String &tag);
+		explicit ElementReticleLine (const Rml::String &tag);
 
-protected:
+  protected:
 	void OnRender () override;
 	void OnResize () override;
 	void OnPropertyChange (const Rml::PropertyIdSet &changed_properties) override;
 	void OnAttributeChange (const Rml::ElementAttributes &changed_attributes) override;
 	bool GetIntrinsicDimensions (Rml::Vector2f &dimensions, float &ratio) override;
 
-private:
-	void GenerateGeometry ();
+  private:
+	void		  GenerateGeometry ();
 	Rml::Geometry m_geometry;
 	bool		  m_geometry_dirty = true;
 };
@@ -73,19 +73,19 @@ private:
 // Full ring (circle stroke).
 class ElementReticleRing : public Rml::Element
 {
-public:
+  public:
 	RMLUI_RTTI_DefineWithParent (ElementReticleRing, Rml::Element)
 
-	explicit ElementReticleRing (const Rml::String &tag);
+		explicit ElementReticleRing (const Rml::String &tag);
 
-protected:
+  protected:
 	void OnRender () override;
 	void OnResize () override;
 	void OnPropertyChange (const Rml::PropertyIdSet &changed_properties) override;
 	bool GetIntrinsicDimensions (Rml::Vector2f &dimensions, float &ratio) override;
 
-private:
-	void GenerateGeometry ();
+  private:
+	void		  GenerateGeometry ();
 	Rml::Geometry m_geometry;
 	bool		  m_geometry_dirty = true;
 };
@@ -93,19 +93,19 @@ private:
 // Partial ring (arc).
 class ElementReticleArc : public Rml::Element
 {
-public:
+  public:
 	RMLUI_RTTI_DefineWithParent (ElementReticleArc, Rml::Element)
 
-	explicit ElementReticleArc (const Rml::String &tag);
+		explicit ElementReticleArc (const Rml::String &tag);
 
-protected:
+  protected:
 	void OnRender () override;
 	void OnResize () override;
 	void OnPropertyChange (const Rml::PropertyIdSet &changed_properties) override;
 	bool GetIntrinsicDimensions (Rml::Vector2f &dimensions, float &ratio) override;
 
-private:
-	void GenerateGeometry ();
+  private:
+	void		  GenerateGeometry ();
 	Rml::Geometry m_geometry;
 	bool		  m_geometry_dirty = true;
 };

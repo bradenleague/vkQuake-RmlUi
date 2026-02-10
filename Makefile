@@ -9,6 +9,8 @@
 #   make assemble Ensure id1/ base assets exist
 #   make clean    Clean build artifacts only
 #   make distclean Clean everything including base assets
+#   make format   Auto-format code (clang-format 17, matching CI)
+#   make format-check  Check formatting without modifying files
 #   make setup    Run first-time setup (deps, rmlui submodule, PAK files)
 #   make meson-setup  Re-run meson setup for the engine
 
@@ -20,7 +22,12 @@ QC_SRC := $(if $(MOD_NAME),$(wildcard $(MOD_NAME)/qcsrc/*.qc))
 FTEQCC := $(if $(filter Darwin,$(shell uname -s)),tools/fteqcc,tools/fteqcc64)
 GAME_FLAG := $(if $(MOD_NAME),-game $(MOD_NAME))
 
-.PHONY: all libs engine run smoke clean distclean setup meson-setup assemble check-submodules
+# Formatting — uses clang-format 17 from .venv to match CI
+CLANG_FORMAT := .venv/bin/clang-format
+FORMAT_DIRS  := Quake Shaders src
+FORMAT_EXTS  := h,c,cpp
+
+.PHONY: all libs engine run smoke clean distclean setup meson-setup assemble check-submodules format format-check format-venv
 
 # --- Submodule guard ---
 check-submodules:
@@ -88,6 +95,33 @@ smoke: all assemble
 
 setup:
 	./setup.sh
+
+# --- Formatting (clang-format 17, matching CI) ---
+format-venv:
+	@if [ ! -x $(CLANG_FORMAT) ]; then \
+		echo "Creating .venv with clang-format 17..."; \
+		python3 -m venv .venv && .venv/bin/pip install -q clang-format==17.0.6; \
+	fi
+
+format: format-venv
+	@for dir in $(FORMAT_DIRS); do \
+		find $$dir -type f \( -name '*.h' -o -name '*.c' -o -name '*.cpp' \) \
+			-exec $(CLANG_FORMAT) -i {} +; \
+	done
+	@echo "Formatted all files in: $(FORMAT_DIRS)"
+
+format-check: format-venv
+	@fail=0; \
+	for dir in $(FORMAT_DIRS); do \
+		find $$dir -type f \( -name '*.h' -o -name '*.c' -o -name '*.cpp' \) \
+			-exec $(CLANG_FORMAT) --dry-run --Werror {} + || fail=1; \
+	done; \
+	if [ $$fail -eq 1 ]; then \
+		echo "Formatting check FAILED — run 'make format' to fix"; \
+		exit 1; \
+	else \
+		echo "Formatting check passed"; \
+	fi
 
 meson-setup:
 	rm -rf build

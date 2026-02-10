@@ -106,7 +106,7 @@ extern "C"
  * Use __thread / __declspec(thread) to avoid C++ thread_local wrapper
  * mismatch with the C _Thread_local definition on macOS. */
 #ifdef _MSC_VER
-extern __declspec(thread) int file_from_pak;
+	extern __declspec (thread) int file_from_pak;
 #else
 extern __thread int file_from_pak;
 #endif

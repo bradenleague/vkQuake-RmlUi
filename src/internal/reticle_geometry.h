@@ -31,7 +31,6 @@ void GenerateArc (
 
 // Rotated rectangle (line arm radiating from center) for line reticles.
 // angle_deg: direction (0 = up, 90 = right). gap: distance from center to near edge. length: arm length.
-void GenerateRotatedRect (
-	Rml::Mesh &mesh, Rml::Vector2f center, float angle_deg, float gap, float length, float width, Rml::ColourbPremultiplied color);
+void GenerateRotatedRect (Rml::Mesh &mesh, Rml::Vector2f center, float angle_deg, float gap, float length, float width, Rml::ColourbPremultiplied color);
 
 } // namespace QRmlUI

@@ -14,7 +14,7 @@ namespace QRmlUI
 
 class ReticlePlugin
 {
-public:
+  public:
 	// Call before Rml::Initialise() to register properties and element instancers.
 	static void Initialise ();
 
