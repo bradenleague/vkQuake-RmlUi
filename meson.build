@@ -53,6 +53,8 @@ if use_sdl3
     add_project_arguments('-DUSE_SDL3', language: 'c')
 endif
 
+python3 = find_program('python3')
+shader_pipeline = files('Shaders/pipeline.py')
 glslang = find_program('glslangValidator')
 spirv_opt = find_program('spirv-opt')
 spirv_remap_command = []
@@ -101,7 +103,8 @@ foreach shader : shaders
                  input: shader,
                  output: '@PLAINNAME@.c',
                  depfile: '@PLAINNAME@.deps',
-                 command: glslang_command
+                 command: [python3, shader_pipeline]
+                          + glslang_command
                           + spirv_opt_command
                           + spirv_remap_command
                           + bintoc_command)
@@ -146,13 +149,10 @@ srcs = [
     'Quake/mdfour.c',
     'Quake/mem.c',
     'Quake/menu.c',
-    'Quake/net_bsd.c',
     'Quake/net_dgrm.c',
     'Quake/net_loop.c',
     'Quake/net_main.c',
-    'Quake/net_udp.c',
     'Quake/palette.c',
-    'Quake/pl_linux.c',
     'Quake/pr_cmds.c',
     'Quake/pr_edict.c',
     'Quake/pr_exec.c',
@@ -177,7 +177,6 @@ srcs = [
     'Quake/sv_phys.c',
     'Quake/sv_user.c',
 	'Quake/sys_sdl.c',
-    'Quake/sys_sdl_unix.c',
     'Quake/tasks.c',
     'Quake/view.c',
     'Quake/wad.c',
@@ -186,7 +185,27 @@ srcs = [
 	 run_generate_embedded_pak,
 ]
 
+# Platform-specific sources
+if host_machine.system() == 'windows'
+    srcs += ['Quake/pl_win.c', 'Quake/sys_sdl_win.c',
+             'Quake/net_win.c', 'Quake/net_wins.c', 'Quake/net_wipx.c']
+    windows_mod = import('windows')
+    srcs += windows_mod.compile_resources('Windows/vkQuake.rc',
+        include_directories : include_directories('Windows', 'Quake'))
+else
+    srcs += ['Quake/pl_linux.c', 'Quake/sys_sdl_unix.c',
+             'Quake/net_bsd.c', 'Quake/net_udp.c']
+endif
+
 cflags = ['-Wall', '-Wno-trigraphs', '-Werror', '-std=gnu11']
+
+if host_machine.system() == 'windows'
+    cflags += ['-D_WIN32_WINNT=0x0600', '-DMI_WIN_USE_FLS']
+    # Suppress warnings from vendored mimalloc on Windows:
+    # - mi_win_main TLS callback unused in this configuration
+    # - ELF visibility attributes not supported on PE/COFF
+    cflags += ['-Wno-unused-function', '-Wno-attributes']
+endif
 
 if use_sdl3
     sdl_dep = dependency('sdl3')
@@ -205,7 +224,11 @@ deps = [
     sdl_dep,
 ]
 
-if build_machine.system() == 'darwin'
+if host_machine.system() == 'windows'
+    deps += [cc.find_library('ws2_32'), cc.find_library('winmm')]
+endif
+
+if host_machine.system() == 'darwin'
     molten_dirs = []
     if import('fs').exists('/opt/homebrew/lib/libMoltenVK.dylib')
         molten_dirs += '/opt/homebrew/lib'
@@ -268,6 +291,29 @@ if opus_dep.found() and opusfile_dep.found()
     cflags += '-DUSE_CODEC_OPUS'
 endif
 
+xmp_dep = dependency('libxmp', required : get_option('use_codec_xmp'))
+if xmp_dep.found()
+    srcs += 'Quake/snd_xmp.c'
+    deps += xmp_dep
+    cflags += '-DUSE_CODEC_XMP'
+endif
+
+mikmod_dep = dependency('libmikmod', required : get_option('use_codec_mikmod'))
+if mikmod_dep.found()
+    srcs += 'Quake/snd_mikmod.c'
+    deps += mikmod_dep
+    cflags += '-DUSE_CODEC_MIKMOD'
+endif
+
+modplug_dep = dependency('libmodplug', required : get_option('use_codec_modplug'))
+if modplug_dep.found()
+    srcs += 'Quake/snd_modplug.c'
+    deps += modplug_dep
+    cflags += '-DUSE_CODEC_MODPLUG'
+endif
+
+cflags += '-DUSE_CODEC_UMX'
+
 if get_option('buildtype').startswith('debug')
     cflags += '-D_DEBUG'
 endif
@@ -286,8 +332,12 @@ cxxflags = ['-Wall', '-std=c++17']
 use_rmlui = get_option('use_rmlui')
 rmlui_srcs = []
 if use_rmlui
-    cflags += ['-DUSE_RMLUI', '-DQRMLUI_HOT_RELOAD']
-    cxxflags += ['-DUSE_RMLUI', '-DQRMLUI_HOT_RELOAD']
+    rmlui_defs = ['-DUSE_RMLUI', '-DQRMLUI_HOT_RELOAD']
+    if host_machine.system() == 'windows'
+        rmlui_defs += '-DRMLUI_STATIC_LIB'
+    endif
+    cflags += rmlui_defs
+    cxxflags += rmlui_defs
 
     # RmlUI sources
     rmlui_srcs = files(
