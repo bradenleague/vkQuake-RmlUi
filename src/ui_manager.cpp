@@ -492,7 +492,7 @@ void UI_Update(double dt)
             // Auto-focus the first tabbable element for keyboard navigation.
             // Suppress the focus sound so it doesn't play on menu open.
             QRmlUI::MenuEventHandler::SuppressFocusSoundBriefly();
-            Rml::Element* first = doc->FindNextTabElement(nullptr, true);
+            Rml::Element* first = doc->FindNextTabElement(doc, true);
             if (first) {
                 first->Focus(true);
             }

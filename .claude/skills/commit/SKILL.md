@@ -7,7 +7,7 @@ description: Build-verify and commit changes with submodule-aware workflow. Use 
 
 ## Pre-flight
 
-1. **Build gate** — A `PreToolUse` hook in `.claude/settings.local.json` automatically runs `make all` before any `git commit` and blocks the commit if the build fails. Do NOT run `make all` manually — the hook handles it. If the hook reports a build failure, fix the issue before retrying.
+1. **Build gate** — A `PreToolUse` hook in `.claude/settings.local.json` automatically runs `make all`, `clang-format`, and `make smoke` before any `git commit`. The smoke test launches the engine for ~20 frames to catch startup crashes. Do NOT run these manually — the hook handles it. If a hook reports a failure, fix the issue before retrying.
 2. **Submodule check** — Run `git submodule status`. The only submodule is `lib/rmlui`. If prefixed with `+`, the pointer has moved.
    - If the user's work involved RmlUI submodule changes, those need to be committed **inside the submodule first**, then the updated pointer committed in the main repo.
    - If the submodule pointer moved but the user didn't intentionally change it, ask before staging it — it may be an accidental pointer drift.

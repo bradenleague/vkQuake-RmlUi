@@ -3,6 +3,7 @@
 # Usage:
 #   make          Build everything
 #   make run      Build and run (set MOD_NAME to select mod)
+#   make smoke    Build and run a startup smoke test (catches crash-on-launch)
 #   make engine   Build the engine (+ embedded RmlUI deps)
 #   make libs     Alias for engine build (for compatibility)
 #   make assemble Ensure id1/ base assets exist
@@ -19,7 +20,7 @@ QC_SRC := $(if $(MOD_NAME),$(wildcard $(MOD_NAME)/qcsrc/*.qc))
 FTEQCC := $(if $(filter Darwin,$(shell uname -s)),tools/fteqcc,tools/fteqcc64)
 GAME_FLAG := $(if $(MOD_NAME),-game $(MOD_NAME))
 
-.PHONY: all libs engine run clean distclean setup meson-setup assemble check-submodules
+.PHONY: all libs engine run smoke clean distclean setup meson-setup assemble check-submodules
 
 # --- Submodule guard ---
 check-submodules:
@@ -70,6 +71,20 @@ else
 run: all assemble
 	./build/vkquake -basedir .
 endif
+
+# Smoke test — launch the engine, wait enough frames for deferred UI init, then quit.
+# Catches startup crashes (segfaults, asserts) that a compile-only check would miss.
+WAIT_CMDS := +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait +wait
+smoke: all assemble
+	@echo "Smoke test: launching engine..."
+	@timeout 30 ./build/vkquake -basedir . $(WAIT_CMDS) +quit > /dev/null 2>&1; \
+	STATUS=$$?; \
+	if [ $$STATUS -eq 0 ]; then \
+		echo "Smoke test: PASSED"; \
+	else \
+		echo "Smoke test: FAILED (exit code $$STATUS)"; \
+		exit 1; \
+	fi
 
 setup:
 	./setup.sh
