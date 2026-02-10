@@ -20,6 +20,7 @@
 #include <RmlUi/Debugger.h>
 #ifdef USE_LUA
 #include <RmlUi/Lua/Lua.h>
+#include "internal/lua_bridge.h"
 #endif
 
 #include "internal/reticle_plugin.h"
@@ -256,6 +257,7 @@ extern "C"
 		// and LuaEventListenerInstancer (handles inline Lua event handlers).
 		// Passing nullptr lets RmlUI own the lua_State; it is cleaned up in Rml::Shutdown().
 		Rml::Lua::Initialise ();
+		QRmlUI::LuaBridge::Initialize ();
 		Con_DPrintf ("UI_Init: Lua scripting enabled\n");
 #endif
 
@@ -551,6 +553,11 @@ extern "C"
 
 		// Update game data model to sync with Quake state
 		QRmlUI::GameDataModel::Update ();
+
+#ifdef USE_LUA
+		// Push game state into Lua 'game' table after data model is current
+		QRmlUI::LuaBridge::Update ();
+#endif
 
 		// Weapon switch flicker — toggle "weapon-switched" class on HUD doc.
 		// The animation itself is defined in hud.rcss (@keyframes weapon-flicker).

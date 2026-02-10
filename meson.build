@@ -380,6 +380,7 @@ if use_rmlui
         deps += lua_dep
         cflags += '-DUSE_LUA'
         cxxflags += '-DUSE_LUA'
+        rmlui_srcs += files('src/internal/lua_bridge.cpp')
     endif
 
     # Build RmlUI via CMake, driven at meson-setup time.
