@@ -186,6 +186,11 @@ void IN_SendKeyEvents (void)
 			if (UI_IsCapturingKey () && down)
 			{
 				int			qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
+				if (qkey == K_ESCAPE)
+				{
+					UI_CancelKeyCapture ();
+					break; /* Escape cancels key capture */
+				}
 				const char *keyname = Key_KeynumToString (qkey);
 				UI_OnKeyCaptured (qkey, keyname);
 				break; /* Consumed by key capture */
@@ -212,6 +217,17 @@ void IN_SendKeyEvents (void)
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 #ifdef USE_RMLUI
+			/* Capture mouse buttons for key rebinding */
+			if (UI_IsCapturingKey () && event.button.down)
+			{
+				if (event.button.button >= 1 && event.button.button <= countof (buttonremap))
+				{
+					int			qkey = buttonremap[event.button.button - 1];
+					const char *keyname = Key_KeynumToString (qkey);
+					UI_OnKeyCaptured (qkey, keyname);
+				}
+				break; /* Consumed by key capture */
+			}
 			if (UI_WantsInput ())
 			{
 				if (in_debugkeys.value)
@@ -230,6 +246,21 @@ void IN_SendKeyEvents (void)
 
 		case SDL_EVENT_MOUSE_WHEEL:
 #ifdef USE_RMLUI
+			/* Capture scroll wheel for key rebinding */
+			if (UI_IsCapturingKey ())
+			{
+				int qkey = 0;
+				if (event.wheel.y > 0)
+					qkey = K_MWHEELUP;
+				else if (event.wheel.y < 0)
+					qkey = K_MWHEELDOWN;
+				if (qkey)
+				{
+					const char *keyname = Key_KeynumToString (qkey);
+					UI_OnKeyCaptured (qkey, keyname);
+				}
+				break; /* Consumed by key capture */
+			}
 			if (UI_WantsInput ())
 			{
 				UI_MouseScroll ((float)event.wheel.x, (float)event.wheel.y);
