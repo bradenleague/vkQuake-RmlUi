@@ -35,6 +35,7 @@ RUN apt-get update \
 	libflac-dev \
 	libopus-dev \
 	libopusfile-dev \
+	liblua5.4-dev \
 	vulkan-sdk \
 	zlib1g-dev \
  && rm -rf /var/lib/apt/lists/*
