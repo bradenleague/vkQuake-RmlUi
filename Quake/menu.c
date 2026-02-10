@@ -479,8 +479,7 @@ void M_RestoreDemoLoop (void)
 	}
 	else
 	{
-		Con_Printf ("M_RestoreDemoLoop: not calling CL_NextDemo (demonum=%d, demoplayback=%d, state=%d)\n",
-			cls.demonum, cls.demoplayback, cls.state);
+		Con_Printf ("M_RestoreDemoLoop: not calling CL_NextDemo (demonum=%d, demoplayback=%d, state=%d)\n", cls.demonum, cls.demoplayback, cls.state);
 	}
 }
 
@@ -653,7 +652,7 @@ void M_Menu_Main_f (void)
 	// the menu is displayed. The demo loop will keep running.
 	if (ui_use_rmlui_menus.value)
 	{
-		UI_PushMenu("ui/rml/menus/main_menu.rml");
+		UI_PushMenu ("ui/rml/menus/main_menu.rml");
 		return;
 	}
 #endif
@@ -908,9 +907,9 @@ Called before opening load_game or save_game menus.
 */
 void M_SyncSavesToUI (void)
 {
-	int i;
+	int			   i;
 	ui_save_slot_t slots[MAX_SAVEGAMES];
-	char ids[MAX_SAVEGAMES][4]; /* "s0".."s19" */
+	char		   ids[MAX_SAVEGAMES][4]; /* "s0".."s19" */
 
 	M_ScanSaves ();
 
@@ -2272,7 +2271,7 @@ void M_Menu_Options_f (void)
 #ifdef USE_RMLUI
 	if (ui_use_rmlui_menus.value)
 	{
-		UI_PushMenu("ui/rml/menus/options.rml");
+		UI_PushMenu ("ui/rml/menus/options.rml");
 		return;
 	}
 #endif

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui_manager.h"
 extern cvar_t ui_use_rmlui_hud;
 extern cvar_t ui_use_rmlui_menus;
-extern int UI_IsMainMenuStartupPending (void);
+extern int	  UI_IsMainMenuStartupPending (void);
 extern double UI_StartupBlackoutAlpha (void);
 #endif
 
@@ -459,7 +459,7 @@ static void SCR_CalcRefdef (void)
 #ifdef USE_RMLUI
 		|| ui_use_rmlui_hud.value // RmlUI HUD renders in its own pass, no need for sbar space
 #endif
-		)
+	)
 		sb_lines = 0;
 	else if (size >= 110)
 		sb_lines = 24 * scale;
@@ -1185,7 +1185,7 @@ static void SCR_DrawGUI (void *unused)
 	cb_context_t *cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
 #ifdef USE_RMLUI
 	const qboolean suppress_native_overlay = ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ();
-	const float startup_blackout_alpha = suppress_native_overlay ? (float)UI_StartupBlackoutAlpha () : 0.0f;
+	const float	   startup_blackout_alpha = suppress_native_overlay ? (float)UI_StartupBlackoutAlpha () : 0.0f;
 #endif
 
 	GL_SetCanvas (cbx, CANVAS_DEFAULT);
@@ -1233,8 +1233,7 @@ static void SCR_DrawGUI (void *unused)
 			Sbar_IntermissionOverlay (cbx);
 #ifdef USE_RMLUI
 		if (ui_use_rmlui_hud.value)
-			UI_SyncGameState(cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype,
-			                 cl.maxclients, cl.levelname, cl.mapname, cl.time);
+			UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
 #endif
 	}
 	else if (cl.intermission == 2 && key_dest == key_game) // end of episode
@@ -1248,8 +1247,7 @@ static void SCR_DrawGUI (void *unused)
 #ifdef USE_RMLUI
 		}
 		if (ui_use_rmlui_hud.value)
-			UI_SyncGameState(cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype,
-			                 cl.maxclients, cl.levelname, cl.mapname, cl.time);
+			UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
 #endif
 	}
 	else

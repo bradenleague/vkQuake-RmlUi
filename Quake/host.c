@@ -34,36 +34,38 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ui_manager.h"
 
 /* Cvars to enable RmlUI components */
-cvar_t ui_use_rmlui = {"ui_use_rmlui", "1", CVAR_ARCHIVE};        /* Master switch */
-cvar_t ui_use_rmlui_hud = {"ui_use_rmlui_hud", "0", CVAR_ARCHIVE};     /* Use RmlUI HUD */
+cvar_t ui_use_rmlui = {"ui_use_rmlui", "1", CVAR_ARCHIVE};			   /* Master switch */
+cvar_t ui_use_rmlui_hud = {"ui_use_rmlui_hud", "0", CVAR_ARCHIVE};	   /* Use RmlUI HUD */
 cvar_t ui_use_rmlui_menus = {"ui_use_rmlui_menus", "1", CVAR_ARCHIVE}; /* Use RmlUI menus */
 
 static qboolean ui_syncing_cvars = false;
 
-#define UI_STARTUP_SETTLE_SECS  0.8  /* total time startup suppression is active */
-#define UI_STARTUP_FADE_SECS    0.3  /* tail fade-out duration within settle window */
-#define UI_AUTO_MENU_DELAY      0.1  /* seconds after init/game-change before auto-detect */
+#define UI_STARTUP_SETTLE_SECS 0.8 /* total time startup suppression is active */
+#define UI_STARTUP_FADE_SECS   0.3 /* tail fade-out duration within settle window */
+#define UI_AUTO_MENU_DELAY	   0.1 /* seconds after init/game-change before auto-detect */
 
-typedef enum {
-	STARTUP_IDLE,         /* no menu pending */
-	STARTUP_SETTLING,     /* waiting for engine to finish loading */
-	STARTUP_READY,        /* settle done, waiting for show conditions */
-	STARTUP_SHOWN,        /* menu has been opened */
-	STARTUP_AUTO_DETECT   /* deferred: checking if idle after game change */
+typedef enum
+{
+	STARTUP_IDLE,		/* no menu pending */
+	STARTUP_SETTLING,	/* waiting for engine to finish loading */
+	STARTUP_READY,		/* settle done, waiting for show conditions */
+	STARTUP_SHOWN,		/* menu has been opened */
+	STARTUP_AUTO_DETECT /* deferred: checking if idle after game change */
 } ui_startup_phase_t;
 
-static struct {
+static struct
+{
 	ui_startup_phase_t phase;
-	double settle_until;      /* realtime when settle/fade expires */
-	double pending_since;     /* realtime when show was first queued */
-	double auto_detect_after; /* earliest realtime for auto-detect */
-} ui_startup = { STARTUP_IDLE, 0.0, 0.0, 0.0 };
+	double			   settle_until;	  /* realtime when settle/fade expires */
+	double			   pending_since;	  /* realtime when show was first queued */
+	double			   auto_detect_after; /* earliest realtime for auto-detect */
+} ui_startup = {STARTUP_IDLE, 0.0, 0.0, 0.0};
 
 static void UI_CloseMenu_f (void);
 static void UI_ShowWhenReady_f (void);
 static void UI_TickStartup (void);
-int UI_IsMainMenuStartupPending (void);
-double UI_StartupBlackoutAlpha (void);
+int			UI_IsMainMenuStartupPending (void);
+double		UI_StartupBlackoutAlpha (void);
 
 static void UI_MasterCvarChanged (cvar_t *var)
 {
@@ -135,7 +137,7 @@ static void UI_Menu_f (void)
 	const char *menu_path;
 
 	if (Cmd_Argc () < 2)
-		menu_path = "ui/rml/menus/main_menu.rml";  /* Default menu */
+		menu_path = "ui/rml/menus/main_menu.rml"; /* Default menu */
 	else
 		menu_path = Cmd_Argv (1);
 
@@ -279,8 +281,8 @@ double UI_StartupBlackoutAlpha (void)
 		return 0.0;
 	double remaining = ui_startup.settle_until - realtime;
 	if (remaining > UI_STARTUP_FADE_SECS)
-		return 1.0;  /* solid phase — entrance animation still playing */
-	return remaining / UI_STARTUP_FADE_SECS;  /* linear fade-out */
+		return 1.0;							 /* solid phase — entrance animation still playing */
+	return remaining / UI_STARTUP_FADE_SECS; /* linear fade-out */
 }
 #endif
 
@@ -558,9 +560,9 @@ void Host_Version_f (void)
 	Con_Printf ("Quake Version %1.2f\n", VERSION);
 	Con_Printf ("QuakeSpasm Version " QUAKESPASM_VER_STRING "\n");
 	Con_Printf ("vkQuake Version " ENGINE_NAME_AND_VER "\n");
-	Con_Printf ("Exe: "__TIME__
-				" "__DATE__
-				"\n");
+	// clang-format off
+	Con_Printf ("Exe: " __TIME__ " " __DATE__ "\n");
+	// clang-format on
 }
 
 /* cvar callback functions : */
@@ -1363,7 +1365,7 @@ void Host_Init (void)
 #ifdef USE_RMLUI
 		/* Initialize RmlUI core BEFORE VID_Init so the render interface exists
 		 * when UI_InitializeVulkan is called from GL_InitDevice */
-		UI_Init (1280, 720, com_basedir);  /* Initial size, will resize after VID_Init */
+		UI_Init (1280, 720, com_basedir); /* Initial size, will resize after VID_Init */
 		/* Register cvars and console commands for RmlUI */
 		Cvar_RegisterVariable (&ui_use_rmlui);
 		Cvar_RegisterVariable (&ui_use_rmlui_hud);

@@ -410,10 +410,10 @@ void M_SyncModsToUI (void)
 	{
 		MAX_UI_MODS = 256
 	};
-	ui_mod_info_t   mods[MAX_UI_MODS];
-	char			names[MAX_UI_MODS][32];
+	ui_mod_info_t	 mods[MAX_UI_MODS];
+	char			 names[MAX_UI_MODS][32];
 	filelist_item_t *mod;
-	int				count = 0;
+	int				 count = 0;
 
 	Modlist_Init ();
 

@@ -12,10 +12,12 @@ jobs:
         configuration: [release, debug]
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - name: Install Dependencies
-      run: brew install molten-vk vulkan-headers glslang spirv-tools sdl2 libvorbis flac opus opusfile flac mpg123 meson
+      run: brew install cmake molten-vk vulkan-headers glslang spirv-tools sdl2 libvorbis flac opus opusfile mpg123 freetype meson
     - name: Build vkQuake
-      run: meson build --buildtype=${{ matrix.configuration }} && ninja -C build
+      run: meson setup build --buildtype=${{ matrix.configuration }} && ninja -C build
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4
       with:

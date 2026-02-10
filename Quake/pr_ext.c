@@ -1436,36 +1436,36 @@ static void PF_sprintf_internal (const char *s, int firstarg, char *outbuf, int 
 							q_snprintf (o, end - o, formatbuf, width, precision, quotedarg);
 						o += strlen (o);
 					}
-/*								else
-								{
-									if(precision < 0) // not set
-										precision = end - o - 1;
-									o += u8_strpad(o, end - o, quotedarg, (flags & PRINTF_LEFT) != 0, width, precision);
-								}
-*/							}
-break;
-case 's':
-	// UTF-8-FIXME: figure it out yourself
-	//							if(flags & PRINTF_ALTERNATE)
-	{
-		if (precision < 0) // not set
-			q_snprintf (o, end - o, formatbuf, width, GETARG_STRING (thisarg));
-		else
-			q_snprintf (o, end - o, formatbuf, width, precision, GETARG_STRING (thisarg));
-		o += strlen (o);
-	}
-	/*							else
-								{
-									if(precision < 0) // not set
-										precision = end - o - 1;
-									o += u8_strpad(o, end - o, GETARG_STRING(thisarg), (flags & PRINTF_LEFT) != 0, width, precision);
-								}
-	*/
-	break;
-default:
-	Con_Warning ("PF_sprintf: invalid format string: %s\n", s0);
-	goto finished;
-}
+				/*								else
+												{
+													if(precision < 0) // not set
+														precision = end - o - 1;
+													o += u8_strpad(o, end - o, quotedarg, (flags & PRINTF_LEFT) != 0, width, precision);
+												}
+				*/							}
+				break;
+				case 's':
+					// UTF-8-FIXME: figure it out yourself
+					//							if(flags & PRINTF_ALTERNATE)
+					{
+						if (precision < 0) // not set
+							q_snprintf (o, end - o, formatbuf, width, GETARG_STRING (thisarg));
+						else
+							q_snprintf (o, end - o, formatbuf, width, precision, GETARG_STRING (thisarg));
+						o += strlen (o);
+					}
+					/*							else
+												{
+													if(precision < 0) // not set
+														precision = end - o - 1;
+													o += u8_strpad(o, end - o, GETARG_STRING(thisarg), (flags & PRINTF_LEFT) != 0, width, precision);
+												}
+					*/
+					break;
+				default:
+					Con_Warning ("PF_sprintf: invalid format string: %s\n", s0);
+					goto finished;
+				}
 			}
 			++s;
 			break;

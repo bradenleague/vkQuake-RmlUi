@@ -1026,13 +1026,13 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 
 #ifdef USE_RMLUI
 		// Let RmlUI handle escape first if it has an active menu
-		if (UI_WantsMenuInput())
+		if (UI_WantsMenuInput ())
 		{
-			UI_HandleEscape();
+			UI_HandleEscape ();
 			// If RmlUI no longer wants input, return control to game
-			if (!UI_WantsMenuInput())
+			if (!UI_WantsMenuInput ())
 			{
-				IN_Activate();
+				IN_Activate ();
 				key_dest = key_game;
 			}
 			return;

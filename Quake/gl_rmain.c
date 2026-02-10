@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "atomics.h"
 #ifdef USE_RMLUI
 extern cvar_t ui_use_rmlui_menus;
-extern int UI_IsMainMenuStartupPending (void);
+extern int	  UI_IsMainMenuStartupPending (void);
 #endif
 
 int r_visframecount; // bumped when going to a new PVS
@@ -515,8 +515,7 @@ void R_DrawEntitiesOnList (cb_context_t *cbx, int alphapass, int chain, qboolean
 		// During deferred startup-menu open, suppress any viewmodel-style entity draw.
 		if (suppress_viewmodel && (currententity->eflags & EFLAGS_VIEWMODEL))
 			continue;
-		if (suppress_viewmodel && currententity->model &&
-			!strncmp (currententity->model->name, "progs/v_", 8))
+		if (suppress_viewmodel && currententity->model && !strncmp (currententity->model->name, "progs/v_", 8))
 			continue;
 #endif
 
@@ -822,7 +821,7 @@ void R_ShowTris (cb_context_t *cbx)
 #ifdef USE_RMLUI
 			if (!(ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ()))
 #endif
-			R_DrawAliasModel_ShowTris (cbx, currententity);
+				R_DrawAliasModel_ShowTris (cbx, currententity);
 		}
 	}
 

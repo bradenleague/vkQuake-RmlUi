@@ -71,12 +71,12 @@ cvar_t gl_cshiftpercent_powerup = {"gl_cshiftpercent_powerup", "100", CVAR_NONE}
 cvar_t r_viewmodel_quake = {"r_viewmodel_quake", "0", CVAR_ARCHIVE};
 
 // HUD inertia — vertical bounce on jump, horizontal sway on camera whip
-float		v_hud_offset_x;			// horizontal UV offset, read by post-process
-float		v_hud_offset_y;			// vertical UV offset, read by post-process
-static float hud_vel_x;			// internal horizontal velocity
-static float hud_vel_y;			// internal vertical velocity
-static qboolean hud_prev_onground;	// previous frame's onground state
-static float hud_prev_yaw;			// previous frame's view yaw
+float			v_hud_offset_x;	   // horizontal UV offset, read by post-process
+float			v_hud_offset_y;	   // vertical UV offset, read by post-process
+static float	hud_vel_x;		   // internal horizontal velocity
+static float	hud_vel_y;		   // internal vertical velocity
+static qboolean hud_prev_onground; // previous frame's onground state
+static float	hud_prev_yaw;	   // previous frame's view yaw
 
 extern int in_forward, in_forward2, in_back;
 
@@ -180,8 +180,10 @@ static void V_UpdateHudInertia (void)
 	float yaw_delta = yaw - hud_prev_yaw;
 
 	// Handle angle wrapping
-	if (yaw_delta > 180.f)  yaw_delta -= 360.f;
-	if (yaw_delta < -180.f) yaw_delta += 360.f;
+	if (yaw_delta > 180.f)
+		yaw_delta -= 360.f;
+	if (yaw_delta < -180.f)
+		yaw_delta += 360.f;
 
 	hud_prev_yaw = yaw;
 

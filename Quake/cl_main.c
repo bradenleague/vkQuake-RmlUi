@@ -177,14 +177,14 @@ void CL_Disconnect (void)
 	// Clean up RmlUI HUD overlays on disconnect
 	{
 		extern cvar_t ui_use_rmlui_hud;
-		extern void Sbar_UI_Reset(void);
+		extern void	  Sbar_UI_Reset (void);
 		if (ui_use_rmlui_hud.value)
 		{
-			UI_HideHUD();
-			UI_HideScoreboard();
-			UI_HideIntermission();
+			UI_HideHUD ();
+			UI_HideScoreboard ();
+			UI_HideIntermission ();
 		}
-		Sbar_UI_Reset();
+		Sbar_UI_Reset ();
 	}
 #endif
 
@@ -329,8 +329,7 @@ void CL_NextDemo (void)
 
 	if (!cls.demos[cls.demonum][0] || cls.demonum == MAX_DEMOS)
 	{
-		Con_Printf ("CL_NextDemo: wrapping to demo 0 (was %d, demos[demonum]='%s')\n",
-			cls.demonum, cls.demos[cls.demonum]);
+		Con_Printf ("CL_NextDemo: wrapping to demo 0 (was %d, demos[demonum]='%s')\n", cls.demonum, cls.demos[cls.demonum]);
 		cls.demonum = 0;
 		if (!cls.demos[cls.demonum][0])
 		{

@@ -107,7 +107,7 @@ void Sbar_ShowScores (void)
 	sb_showscores = true;
 #ifdef USE_RMLUI
 	if (ui_use_rmlui_hud.value)
-		UI_ShowScoreboard();
+		UI_ShowScoreboard ();
 #endif
 }
 
@@ -124,12 +124,12 @@ void Sbar_DontShowScores (void)
 	sb_showscores = false;
 #ifdef USE_RMLUI
 	if (ui_use_rmlui_hud.value)
-		UI_HideScoreboard();
+		UI_HideScoreboard ();
 #endif
 }
 
 #ifdef USE_RMLUI
-void Sbar_UI_Reset(void)
+void Sbar_UI_Reset (void)
 {
 	rmlui_hud_shown = false;
 }
@@ -1293,27 +1293,28 @@ void Sbar_Draw (cb_context_t *cbx)
 	// If RmlUI HUD is enabled and we're in-game (world loaded, fully signed on, not a demo), show RmlUI HUD
 	if (ui_use_rmlui_hud.value && cl.worldmodel && cls.signon == SIGNONS && !cls.demoplayback)
 	{
-		if (!rmlui_hud_shown) {
-			UI_ShowHUD(NULL);  // NULL = default hud_classic.rml
+		if (!rmlui_hud_shown)
+		{
+			UI_ShowHUD (NULL); // NULL = default hud_classic.rml
 			rmlui_hud_shown = true;
 		}
 		// Sync game state to RmlUI data model
-		UI_SyncGameState(cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype,
-		                    cl.maxclients, cl.levelname, cl.mapname, cl.time);
+		UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
 
 		// Sync scoreboard player data in deathmatch or when scoreboard visible
 		if (cl.gametype == GAME_DEATHMATCH || sb_showscores)
 		{
-			int i;
+			int				 i;
 			ui_player_info_t sb_players[MAX_SCOREBOARD];
-			int sb_count = 0;
+			int				 sb_count = 0;
 
-			Sbar_SortFrags();
+			Sbar_SortFrags ();
 			for (i = 0; i < scoreboardlines && i < MAX_SCOREBOARD; i++)
 			{
-				int k = fragsort[i];
+				int			  k = fragsort[i];
 				scoreboard_t *s = &cl.scores[k];
-				if (!s->name[0]) continue;
+				if (!s->name[0])
+					continue;
 				sb_players[sb_count].name = s->name;
 				sb_players[sb_count].frags = s->frags;
 				sb_players[sb_count].colors = s->colors;
@@ -1321,7 +1322,7 @@ void Sbar_Draw (cb_context_t *cbx)
 				sb_players[sb_count].is_local = (k == cl.viewentity - 1) ? 1 : 0;
 				sb_count++;
 			}
-			UI_SyncScoreboard(sb_players, sb_count);
+			UI_SyncScoreboard (sb_players, sb_count);
 		}
 
 		return;
@@ -1329,7 +1330,7 @@ void Sbar_Draw (cb_context_t *cbx)
 	else if (rmlui_hud_shown)
 	{
 		// Cvar was toggled off - hide RmlUI HUD
-		UI_HideHUD();
+		UI_HideHUD ();
 		rmlui_hud_shown = false;
 	}
 #endif

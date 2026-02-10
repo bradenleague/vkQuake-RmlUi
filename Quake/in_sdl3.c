@@ -125,7 +125,7 @@ void IN_SendKeyEvents (void)
 			S_UnblockSound ();
 			VID_FocusGained ();
 #ifdef USE_RMLUI
-			if (UI_WantsInput())
+			if (UI_WantsInput ())
 			{
 				float mouse_x, mouse_y;
 				IN_EndIgnoringMouseEvents ();
@@ -153,7 +153,7 @@ void IN_SendKeyEvents (void)
 
 #ifdef USE_RMLUI
 			/* Forward text input to RmlUI when menu is active */
-			if (UI_WantsInput())
+			if (UI_WantsInput ())
 			{
 				unsigned char *ch;
 				for (ch = (unsigned char *)event.text.text; *ch; ch++)
@@ -161,7 +161,7 @@ void IN_SendKeyEvents (void)
 					if ((*ch & ~0x7F) == 0)
 						UI_CharEvent (*ch);
 				}
-				break;  /* Don't pass to Quake */
+				break; /* Don't pass to Quake */
 			}
 #endif
 			// We use SDL_EVENT_TEXT_INPUT for typing in the console / chat.
@@ -183,21 +183,21 @@ void IN_SendKeyEvents (void)
 
 #ifdef USE_RMLUI
 			/* Check if RmlUI is capturing a key for key binding */
-			if (UI_IsCapturingKey() && down)
+			if (UI_IsCapturingKey () && down)
 			{
-				int qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
-				const char* keyname = Key_KeynumToString(qkey);
-				UI_OnKeyCaptured(qkey, keyname);
-				break;  /* Consumed by key capture */
+				int			qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
+				const char *keyname = Key_KeynumToString (qkey);
+				UI_OnKeyCaptured (qkey, keyname);
+				break; /* Consumed by key capture */
 			}
 
 			/* Forward key events to RmlUI if it wants menu input
 			 * EXCEPT for escape key which is handled by keys.c for proper
 			 * menu stack navigation */
-			if (UI_WantsInput() && event.key.key != SDLK_ESCAPE)
+			if (UI_WantsInput () && event.key.key != SDLK_ESCAPE)
 			{
 				if (UI_KeyEvent (event.key.key, event.key.scancode, down, event.key.repeat))
-					break;  /* Consumed by RmlUI */
+					break; /* Consumed by RmlUI */
 			}
 #endif
 
@@ -217,7 +217,7 @@ void IN_SendKeyEvents (void)
 				if (in_debugkeys.value)
 					Con_Printf ("SDL mouse button %d state %d (RmlUI wants=1)\n", event.button.button, event.button.down);
 				UI_MouseButton (event.button.button, event.button.down);
-				break;  /* Consumed by RmlUI */
+				break; /* Consumed by RmlUI */
 			}
 #endif
 			if (event.button.button < 1 || event.button.button > countof (buttonremap))
@@ -233,7 +233,7 @@ void IN_SendKeyEvents (void)
 			if (UI_WantsInput ())
 			{
 				UI_MouseScroll ((float)event.wheel.x, (float)event.wheel.y);
-				break;  /* Consumed by RmlUI */
+				break; /* Consumed by RmlUI */
 			}
 #endif
 			if (event.wheel.y > 0)
@@ -251,7 +251,7 @@ void IN_SendKeyEvents (void)
 		case SDL_EVENT_MOUSE_MOTION:
 #ifdef USE_RMLUI
 			UI_MouseMove (event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
-			if (UI_WantsInput())
+			if (UI_WantsInput ())
 				break;
 #endif
 			IN_MouseMotion (event.motion.xrel, event.motion.yrel);
@@ -302,7 +302,7 @@ static bool SDLCALL IN_FilterMouseEvents (const SDL_Event *event)
 {
 #ifdef USE_RMLUI
 	/* Don't filter mouse events when RmlUI menu needs them */
-	if (UI_WantsInput())
+	if (UI_WantsInput ())
 		return true;
 #endif
 

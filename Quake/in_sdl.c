@@ -560,8 +560,8 @@ void IN_JoyMove (usercmd_t *cmd)
 
 void IN_MouseMove (usercmd_t *cmd)
 {
-	float dmx, dmy;
-	float sens;
+	float		 dmx, dmy;
+	float		 sens;
 	static float last_dmx = 0.0f;
 	static float last_dmy = 0.0f;
 

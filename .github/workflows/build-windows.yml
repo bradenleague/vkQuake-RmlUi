@@ -1,39 +1,51 @@
-name: Windows CI (msvc)
+name: Windows CI (ucrt64)
 
 on: [push, pull_request]
 
 jobs:
   build-windows:
-    name: Build Windows
-    runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix:
-        configuration: [Release, Debug]
-        platform: [x64]
+    name: Build Windows (ucrt64)
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Install Vulkan SDK
-      uses: humbletim/install-vulkan-sdk@v1.2
+    - name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
       with:
-        version: 1.4.321.1
-        cache: true
+        msystem: ucrt64
+        install: >-
+          base-devel
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-meson
+          mingw-w64-ucrt-x86_64-ninja
+          mingw-w64-ucrt-x86_64-glslang
+          mingw-w64-ucrt-x86_64-spirv-tools
+          mingw-w64-ucrt-x86_64-SDL2
+          mingw-w64-ucrt-x86_64-vulkan-headers
+          mingw-w64-ucrt-x86_64-vulkan-loader
+          mingw-w64-ucrt-x86_64-freetype
+          mingw-w64-ucrt-x86_64-flac
+          mingw-w64-ucrt-x86_64-libmad
+          mingw-w64-ucrt-x86_64-libogg
+          mingw-w64-ucrt-x86_64-libvorbis
+          mingw-w64-ucrt-x86_64-opus
+          mingw-w64-ucrt-x86_64-opusfile
+          mingw-w64-ucrt-x86_64-mpg123
+          mingw-w64-ucrt-x86_64-libxmp
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
     - name: Build vkQuake
-      run: |
-        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $msbuild = & "$vswhere" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | select-object -first 1
-        $options = @( `
-          '-property:Configuration=${{ matrix.configuration }}', `
-          '-property:Platform=${{ matrix.platform }}', `
-          '-maxcpucount', `
-          '-verbosity:minimal' `
-        )
-        & $msbuild Windows\VisualStudio\vkquake.sln $options
-        if (-not $?) { throw "Build failed" }
+      run: meson setup build --buildtype=release && ninja -C build
+
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4
       with:
-        name: vkQuake archive (${{ matrix.configuration }}, ${{ matrix.platform }})
-        path: |
-            Windows\VisualStudio\Build-vkQuake\**\*.exe
-            Windows\VisualStudio\Build-vkQuake\**\*.dll
+        name: vkQuake archive (ucrt64)
+        path: build/vkquake.exe

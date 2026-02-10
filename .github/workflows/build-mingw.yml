@@ -1,42 +1,51 @@
-name: Windows CI (mingw)
+name: Windows CI (mingw64)
 
 on: [push, pull_request]
 
 jobs:
   build-mingw:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+    name: Build Windows (mingw64)
+    runs-on: windows-latest
 
     defaults:
       run:
-        shell: ${{ matrix.platform.shell }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-        - { name: Windows (mingw64),  os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64, makefile: Makefile.w64 }
+        shell: msys2 {0}
 
     steps:
     - name: Set up MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: ${{ matrix.platform.msystem }}
-        install: base-devel
-          ${{ matrix.platform.msys-env }}-gcc
-          ${{ matrix.platform.msys-env }}-glslang
+        msystem: mingw64
+        install: >-
+          base-devel
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-glslang
+          mingw-w64-x86_64-spirv-tools
+          mingw-w64-x86_64-SDL2
+          mingw-w64-x86_64-vulkan-headers
+          mingw-w64-x86_64-vulkan-loader
+          mingw-w64-x86_64-freetype
+          mingw-w64-x86_64-flac
+          mingw-w64-x86_64-libmad
+          mingw-w64-x86_64-libogg
+          mingw-w64-x86_64-libvorbis
+          mingw-w64-x86_64-opus
+          mingw-w64-x86_64-opusfile
+          mingw-w64-x86_64-mpg123
+          mingw-w64-x86_64-libxmp
 
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-    - name: Build MinGW
-      run: |
-        set -eu
-        parallel="$(getconf _NPROCESSORS_ONLN)"
-        make -j"${parallel}" -C Quake -f ${{ matrix.platform.makefile }} all
+    - name: Build vkQuake
+      run: meson setup build --buildtype=release && ninja -C build
+
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4
       with:
-        name: vkQuake archive (${{ matrix.platform.msystem }})
-        path: |
-            Quake/*.exe
-            Quake/*.dll
+        name: vkQuake archive (mingw64)
+        path: build/vkquake.exe

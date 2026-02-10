@@ -739,7 +739,7 @@ void CL_PlayDemo_f (void)
 	// get rid of the menu and/or console
 #ifdef USE_RMLUI
 	// Keep menu focus if RmlUI menus are active (demos can run in background).
-	if (!UI_WantsMenuInput())
+	if (!UI_WantsMenuInput ())
 #endif
 	{
 		key_dest = key_game;

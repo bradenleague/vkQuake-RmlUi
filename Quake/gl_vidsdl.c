@@ -124,7 +124,7 @@ cvar_t		  vid_gamma = {"gamma", "0.9", CVAR_ARCHIVE};		// johnfitz -- moved here
 cvar_t		  vid_contrast = {"contrast", "1.4", CVAR_ARCHIVE}; // QuakeSpasm, MarkV
 cvar_t		  r_ui_warp = {"r_ui_warp", "-0.1", CVAR_NONE};
 cvar_t		  r_ui_chromatic = {"r_ui_chromatic", "0.003", CVAR_NONE};
-cvar_t		  r_usesops = {"r_usesops", "1", CVAR_ARCHIVE};		// johnfitz
+cvar_t		  r_usesops = {"r_usesops", "1", CVAR_ARCHIVE}; // johnfitz
 #if defined(_DEBUG)
 static cvar_t r_raydebug = {"r_raydebug", "0", 0};
 #endif
@@ -377,7 +377,7 @@ float VID_GetDisplayDPIScale (void)
 #ifdef USE_SDL3
 	{
 		SDL_DisplayID display = SDL_GetDisplayForWindow (draw_context);
-		float         scale;
+		float		  scale;
 		if (display == 0)
 			display = SDL_GetPrimaryDisplay ();
 		scale = SDL_GetDisplayContentScale (display);
@@ -385,7 +385,7 @@ float VID_GetDisplayDPIScale (void)
 	}
 #else
 	{
-		int   display;
+		int	  display;
 		float ddpi = 0.0f;
 		display = SDL_GetWindowDisplayIndex (draw_context);
 		if (display < 0)
@@ -2571,7 +2571,7 @@ static void GL_CreateRenderResources (void)
 	 * This is called every time render resources are created/recreated to ensure
 	 * RmlUI's pipelines reference the current render pass. */
 	{
-		cb_context_t *gui_cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
+		cb_context_t	  *gui_cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
 		ui_vulkan_config_t rmlui_config = {0};
 		rmlui_config.device = vulkan_globals.device;
 		rmlui_config.physical_device = vulkan_physical_device;
@@ -3260,19 +3260,15 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 		// Render post process
 		GL_Viewport (cbx, 0, 0, vid.width, vid.height, 0.0f, 1.0f);
 		float postprocess_values[7] = {
-			vid_gamma.value,
-			q_min (2.0f, q_max (1.0f, vid_contrast.value)),
-			r_ui_warp.value,
-			r_ui_chromatic.value * (1080.0f / (float)vid.height),
-			v_hud_offset_x,
-			v_hud_offset_y,
+			vid_gamma.value,	 q_min (2.0f, q_max (1.0f, vid_contrast.value)),
+			r_ui_warp.value,	 r_ui_chromatic.value * (1080.0f / (float)vid.height),
+			v_hud_offset_x,		 v_hud_offset_y,
 			scr_sbaralpha.value,
 		};
 
 		R_BindPipeline (cbx, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline);
 		VkDescriptorSet pp_sets[2] = {postprocess_descriptor_set, postprocess_ui_descriptor_set};
-		vkCmdBindDescriptorSets (
-			cbx->cb, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline.layout.handle, 0, 2, pp_sets, 0, NULL);
+		vkCmdBindDescriptorSets (cbx->cb, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline.layout.handle, 0, 2, pp_sets, 0, NULL);
 		R_PushConstants (cbx, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 7 * sizeof (float), postprocess_values);
 		vkCmdDraw (cbx->cb, 3, 1, 0, 0);
 	}
@@ -4193,10 +4189,10 @@ Called before opening the video options menu.
 */
 void VID_SyncModesToUI (void)
 {
-	int i;
+	int				i;
 	ui_video_mode_t modes[MAX_MODE_LIST];
-	int cur_w = (int)vid_width.value;
-	int cur_h = (int)vid_height.value;
+	int				cur_w = (int)vid_width.value;
+	int				cur_h = (int)vid_height.value;
 
 	for (i = 0; i < vid_menu_nummodes; i++)
 	{
