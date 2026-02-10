@@ -278,13 +278,39 @@ Transform::MakeProperty({Transforms::TranslateY{12.f, Unit::DP}});
 Transform::MakeProperty({Transforms::TranslateY{12.f, Unit::PX}});
 ```
 
-## Lottie Plugin
+## Custom Reticle Elements
 
-Vector animation via rlottie library. **Not currently enabled in this project's build.**
+Procedural reticle primitives registered as custom RmlUI elements. Shape parameters are RCSS custom properties, animatable via transitions on class changes.
 
-Requires: `rlottie` library + CMake flag `RMLUI_LOTTIE_PLUGIN=ON`
+### Elements
 
-Usage in RML:
+| Element | RCSS Properties | Description |
+|---|---|---|
+| `<reticle>` | (container) | Coordinate space — children render centered in content box |
+| `<reticle-dot>` | `reticle-radius` | Filled circle |
+| `<reticle-line>` | `reticle-length`, `reticle-width`, `reticle-gap` + `angle` attr | Rotated rect arm |
+| `<reticle-ring>` | `reticle-radius`, `reticle-stroke` | Full ring |
+| `<reticle-arc>` | `reticle-radius`, `reticle-stroke`, `reticle-start-angle`, `reticle-end-angle` | Partial ring |
+
+### Example
+
 ```html
-<lottie src="animation.json"></lottie>
+<reticle>
+    <reticle-line angle="0" />
+    <reticle-line angle="90" />
+    <reticle-line angle="180" />
+    <reticle-line angle="270" />
+    <reticle-dot />
+</reticle>
+```
+
+```rcss
+.crosshair reticle-line { reticle-gap: 4dp; reticle-length: 8dp; reticle-width: 2dp; }
+.crosshair reticle-dot { reticle-radius: 2dp; }
+
+reticle-dot, reticle-line, reticle-ring, reticle-arc {
+    transition: reticle-radius reticle-gap reticle-length reticle-stroke 0.25s quadratic-out;
+}
+
+.crosshair.firing reticle-line { reticle-gap: 7dp; }
 ```

@@ -42,7 +42,7 @@ jobs:
         submodules: recursive
 
     - name: Build vkQuake
-      run: meson setup build --buildtype=release -Duse_lottie=false && ninja -C build
+      run: meson setup build --buildtype=release && ninja -C build
 
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4

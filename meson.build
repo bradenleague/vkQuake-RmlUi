@@ -380,16 +380,6 @@ if use_rmlui
     freetype_dep = dependency('freetype2', required : true)
     deps += freetype_dep
 
-    # Lottie vector animation support (requires rlottie)
-    use_lottie = get_option('use_lottie')
-    if use_lottie
-        rlottie_dep = dependency('rlottie', required : true)
-        deps += rlottie_dep
-        message('Lottie support: enabled')
-    else
-        message('Lottie support: disabled')
-    endif
-
     rmlui_src_dir = meson.project_source_root() / 'lib' / 'rmlui'
     rmlui_build_dir = meson.project_build_root() / 'rmlui_cmake_build'
 
@@ -404,10 +394,6 @@ if use_rmlui
         '-DRMLUI_THIRDPARTY_CONTAINERS=ON',
         '-DRMLUI_PRECOMPILED_HEADERS=OFF',
     ]
-    if use_lottie
-        rmlui_cmake_args += '-DRMLUI_LOTTIE_PLUGIN=ON'
-    endif
-
     message('Configuring RmlUI via CMake...')
     rmlui_cmake_cfg = run_command('cmake',
         rmlui_cmake_args,
