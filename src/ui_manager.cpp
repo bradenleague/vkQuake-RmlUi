@@ -489,6 +489,14 @@ void UI_Update(double dt)
             }
             doc->SetClass("menu-enter", true);
 
+            // Auto-focus the first tabbable element for keyboard navigation.
+            // Suppress the focus sound so it doesn't play on menu open.
+            QRmlUI::MenuEventHandler::SuppressFocusSoundBriefly();
+            Rml::Element* first = doc->FindNextTabElement(nullptr, true);
+            if (first) {
+                first->Focus(true);
+            }
+
             g_state.pending_menu_enter = nullptr;
         }
     }
