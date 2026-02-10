@@ -1,59 +1,110 @@
 <rml>
-  <head>
-    <title>vkQuake RmlUI - HUD</title>
-    <link type="text/rcss" href="../rcss/base.rcss" />
-    <link type="text/rcss" href="../rcss/hud.rcss" />
-  </head>
-  <body data-model="game" class="hud-overlay">
-    <!-- Crosshair -->
-    <div id="crosshair">
-      <div class="dot"></div>
-      <div class="line-h line-left"></div>
-      <div class="line-h line-right"></div>
-      <div class="line-v line-top"></div>
-      <div class="line-v line-bottom"></div>
+<head>
+    <title>HUD</title>
+    <link type="text/rcss" href="../rcss/base.rcss"/>
+    <link type="text/rcss" href="../rcss/hud.rcss"/>
+</head>
+<body data-model="game" class="hud-overlay hud-classic">
+
+    <!-- Level Stats (top-right, single player) -->
+    <div class="level-stats hud-top-right" data-if="!deathmatch">
+        <div class="level-stat">
+            <span class="level-stat-label">KILLS</span>
+            <span class="level-stat-value">{{ monsters }}/{{ total_monsters }}</span>
+        </div>
+        <div class="level-stat">
+            <span class="level-stat-label">SECRETS</span>
+            <span class="level-stat-value">{{ secrets }}/{{ total_secrets }}</span>
+        </div>
     </div>
 
-    <!-- Messages -->
-    <div id="messages">
-      <!-- Messages populated dynamically -->
+    <!-- Inventory Bar (weapons + ammo left, items right) -->
+    <div class="retro-ibar">
+        <!-- Weapon slots + ammo counts (left side) -->
+        <div class="retro-weapons-area">
+            <div class="retro-ammo-counts">
+                <span class="retro-ammo-count shells">{{ shells }}</span>
+                <span class="retro-ammo-count nails">{{ nails }}</span>
+                <span class="retro-ammo-count rockets">{{ rockets }}</span>
+                <span class="retro-ammo-count cells">{{ cells }}</span>
+            </div>
+            <div class="retro-weapons">
+                <div class="weapon-slot axe owned" data-class-active="active_weapon == 4096"></div>
+                <div class="weapon-slot shotgun" data-class-owned="has_shotgun" data-class-active="active_weapon == 1"></div>
+                <div class="weapon-slot sshotgun" data-class-owned="has_super_shotgun" data-class-active="active_weapon == 2"></div>
+                <div class="weapon-slot nailgun" data-class-owned="has_nailgun" data-class-active="active_weapon == 4"></div>
+                <div class="weapon-slot snailgun" data-class-owned="has_super_nailgun" data-class-active="active_weapon == 8"></div>
+                <div class="weapon-slot rlaunch" data-class-owned="has_grenade_launcher" data-class-active="active_weapon == 16"></div>
+                <div class="weapon-slot srlaunch" data-class-owned="has_rocket_launcher" data-class-active="active_weapon == 32"></div>
+                <div class="weapon-slot lightng" data-class-owned="has_lightning_gun" data-class-active="active_weapon == 64"></div>
+            </div>
+        </div>
+
+        <!-- Items: keys + powerups (right side) -->
+        <div class="retro-items">
+            <img class="retro-item" data-if="has_key1" src="../img/sbar/sb_key1.png" />
+            <img class="retro-item" data-if="has_key2" src="../img/sbar/sb_key2.png" />
+            <img class="retro-item" data-if="has_quad" src="../img/sbar/sb_quad.png" />
+            <img class="retro-item" data-if="has_invulnerability" src="../img/sbar/sb_invuln.png" />
+            <img class="retro-item" data-if="has_invisibility" src="../img/sbar/sb_invis.png" />
+            <img class="retro-item" data-if="has_suit" src="../img/sbar/sb_suit.png" />
+        </div>
     </div>
 
-    <!-- Keys (above weapon info, right side) -->
-    <div id="simple-keys">
-      <span class="simple-key" data-class-owned="has_key1">S</span>
-      <span class="simple-key gold" data-class-owned="has_key2">G</span>
+    <!-- Status Bar -->
+    <div class="retro-sbar">
+        <!-- Armor section -->
+        <div class="retro-stat-section">
+            <div class="retro-icon-slot">
+                <img data-if="armor_type == 1" src="../img/sbar/sb_armor1.png" />
+                <img data-if="armor_type == 2" src="../img/sbar/sb_armor2.png" />
+                <img data-if="armor_type == 3" src="../img/sbar/sb_armor3.png" />
+            </div>
+            <span class="retro-value">{{ armor }}</span>
+        </div>
+
+        <!-- Face + Health section -->
+        <div class="retro-stat-section retro-center">
+            <div class="retro-face">
+                <img data-if="health >= 80" src="../img/sbar/face1.png" />
+                <img data-if="health >= 60 &amp;&amp; health &lt; 80" src="../img/sbar/face2.png" />
+                <img data-if="health >= 40 &amp;&amp; health &lt; 60" src="../img/sbar/face3.png" />
+                <img data-if="health >= 20 &amp;&amp; health &lt; 40" src="../img/sbar/face4.png" />
+                <img data-if="health &lt; 20" src="../img/sbar/face5.png" />
+            </div>
+            <span class="retro-value">{{ health }}</span>
+        </div>
+
+        <!-- Ammo section -->
+        <div class="retro-stat-section">
+            <span class="retro-value">{{ ammo }}</span>
+            <div class="retro-icon-slot">
+                <img data-if="is_shells_weapon" src="../img/sbar/sb_shells.png" />
+                <img data-if="is_nails_weapon" src="../img/sbar/sb_nails.png" />
+                <img data-if="is_rockets_weapon" src="../img/sbar/sb_rocket.png" />
+                <img data-if="is_cells_weapon" src="../img/sbar/sb_cells.png" />
+            </div>
+        </div>
     </div>
 
-    <!-- Weapon info -->
-    <div id="weapon-info">
-      <span id="weapon-name">{{ weapon_label }}</span>
+    <!-- Centerprint (center screen, when active) -->
+    <div class="centerprint-area hud-center" data-if="centerprint_visible" data-class-fading="centerprint_fading">
+        <div class="centerprint-text">{{ centerprint }}</div>
     </div>
 
-    <!-- Powerups (above status bar, left side) -->
-    <div id="simple-powerups">
-      <span class="simple-powerup quad" data-if="has_quad">QUAD</span>
-      <span class="simple-powerup pent" data-if="has_invulnerability">PENT</span>
-      <span class="simple-powerup ring" data-if="has_invisibility">RING</span>
-      <span class="simple-powerup suit" data-if="has_suit">SUIT</span>
+    <!-- Notify messages (top-left, below level stats) -->
+    <div class="notify-area">
+        <div class="notify-line" data-if="notify_0_visible" data-class-fading="notify_0_fading">{{ notify_0 }}</div>
+        <div class="notify-line" data-if="notify_1_visible" data-class-fading="notify_1_fading">{{ notify_1 }}</div>
+        <div class="notify-line" data-if="notify_2_visible" data-class-fading="notify_2_fading">{{ notify_2 }}</div>
+        <div class="notify-line" data-if="notify_3_visible" data-class-fading="notify_3_fading">{{ notify_3 }}</div>
     </div>
 
-    <!-- Status bar -->
-    <div id="status-bar">
-      <div id="health" class="stat-group">
-        <span class="stat-value">{{ health }}</span>
-        <span class="stat-label">HP</span>
-      </div>
-
-      <div id="armor" class="stat-group">
-        <span class="stat-value">{{ armor }}</span>
-        <span class="stat-label">AR</span>
-      </div>
-
-      <div id="ammo" class="stat-group">
-        <span class="stat-value">{{ ammo }}</span>
-        <span class="stat-label">AM</span>
-      </div>
+    <!-- Chat input overlay -->
+    <div class="chat-input" data-if="chat_active">
+        <span class="chat-prefix">{{ chat_prefix }}</span>
+        <span class="chat-text">{{ chat_text }}</span>
     </div>
-  </body>
+
+</body>
 </rml>

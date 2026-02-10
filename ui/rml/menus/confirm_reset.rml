@@ -18,7 +18,7 @@
                 </p>
 
                 <div class="dialog-buttons">
-                    <button class="menu-item danger" onclick="command('resetcfg'); command('exec default.cfg'); command('ui_use_rmlui_menus 1'); close()">
+                    <button class="menu-item danger" onclick="command('resetcfg'); command('exec default.cfg'); close()">
                         Yes, Reset
                     </button>
                     <button class="menu-item" onclick="close()">

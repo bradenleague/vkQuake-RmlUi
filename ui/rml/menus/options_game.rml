@@ -40,26 +40,6 @@
                             <span class="option-value">{{ crosshair_label }}</span>
                         </div>
 
-                        <!-- HUD Style -->
-                        <div class="option-row clickable" onclick="cycle_cvar('hud_style', 1)">
-                            <span class="option-label">HUD Style</span>
-                            <span class="option-value">{{ hud_style_label }}</span>
-                        </div>
-
-                        <!-- Modern HUD -->
-                        <div class="option-row clickable" onclick="cycle_cvar('rmlui_hud', 1)">
-                            <span class="option-label">Modern HUD</span>
-                            <span class="option-value" data-if="rmlui_hud">On</span>
-                            <span class="option-value" data-if="!rmlui_hud">Off</span>
-                        </div>
-
-                        <!-- Modern Menus -->
-                        <div class="option-row clickable" onclick="cycle_cvar('rmlui_menus', 1)">
-                            <span class="option-label">Modern Menus</span>
-                            <span class="option-value" data-if="rmlui_menus">On</span>
-                            <span class="option-value" data-if="!rmlui_menus">Off</span>
-                        </div>
-
                         <!-- Show FPS -->
                         <div class="option-row clickable" onclick="cycle_cvar('show_fps', 1)">
                             <span class="option-label">Show FPS</span>
