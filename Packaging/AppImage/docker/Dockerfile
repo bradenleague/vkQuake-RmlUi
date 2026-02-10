@@ -8,10 +8,12 @@ RUN apt-get update \
  && apt-get update \
  && apt-get install -y \
 	build-essential \
+	cmake \
 	file \
 	fuse \
 	unzip \
 	ninja-build \
+	libfreetype-dev \
 	libasound2-dev \
 	libaudiofile-dev \
 	libdbus-1-dev \
