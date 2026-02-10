@@ -1,0 +1,191 @@
+<rml>
+<head>
+    <title>Terminal Visor HUD</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_hud.rcss"/>
+</head>
+<body data-model="game" class="visor-hud"
+      data-class-tier-0="face_index == 0"
+      data-class-tier-1="face_index == 1"
+      data-class-tier-2="face_index == 2"
+      data-class-tier-3="face_index == 3"
+      data-class-tier-4="face_index == 4"
+      data-class-has-quad="has_quad"
+      data-class-has-pent="has_invulnerability"
+      data-class-has-ring="has_invisibility"
+      data-class-has-suit="has_suit">
+
+    <!-- Safe zone: insets all HUD content away from barrel-warp distortion at edges -->
+    <div class="visor-safe-zone">
+
+        <!-- ========== Visor Chrome — Corner L-Brackets ========== -->
+        <div class="visor-bracket bracket-tl"></div>
+        <div class="visor-bracket bracket-tr"></div>
+        <div class="visor-bracket bracket-bl"></div>
+        <div class="visor-bracket bracket-br"></div>
+
+        <!-- ========== Visor Header Bar ========== -->
+        <div class="visor-header">
+            <span class="sys-label">RNG-VISOR v2.1</span>
+            <span class="visor-header-sep">|</span>
+            <span class="sys-label">{{ level_name }}</span>
+            <span class="visor-header-sep">|</span>
+            <span class="sys-label">{{ map_name }}</span>
+        </div>
+
+        <!-- ========== Left Column (flows top-down) ========== -->
+        <div class="visor-left-col">
+
+            <!-- Powerup Badges -->
+            <div class="visor-powerups">
+                <div class="visor-powerup powerup-quad" data-if="has_quad">
+                    <span class="sys-label">SYS::QUAD</span>
+                </div>
+                <div class="visor-powerup powerup-pent" data-if="has_invulnerability">
+                    <span class="sys-label">SYS::PENT</span>
+                </div>
+                <div class="visor-powerup powerup-ring" data-if="has_invisibility">
+                    <span class="sys-label">SYS::RING</span>
+                </div>
+                <div class="visor-powerup powerup-suit" data-if="has_suit">
+                    <span class="sys-label">SYS::SUIT</span>
+                </div>
+            </div>
+
+            <!-- Sigil Tracker (appears once any sigil collected) -->
+            <div class="visor-sigils" data-if="!deathmatch && (has_sigil1 || has_sigil2 || has_sigil3 || has_sigil4)">
+                <span class="sys-label">SIGIL</span>
+                <div class="sigil-slots">
+                    <div class="sigil-slot" data-class-owned="has_sigil1">E1</div>
+                    <div class="sigil-slot" data-class-owned="has_sigil2">E2</div>
+                    <div class="sigil-slot" data-class-owned="has_sigil3">E3</div>
+                    <div class="sigil-slot" data-class-owned="has_sigil4">E4</div>
+                </div>
+            </div>
+
+            <!-- Notify Messages -->
+            <div class="visor-notify">
+                <div class="notify-line" data-if="notify_0_visible" data-class-fading="notify_0_fading">{{ notify_0 }}</div>
+                <div class="notify-line" data-if="notify_1_visible" data-class-fading="notify_1_fading">{{ notify_1 }}</div>
+                <div class="notify-line" data-if="notify_2_visible" data-class-fading="notify_2_fading">{{ notify_2 }}</div>
+                <div class="notify-line" data-if="notify_3_visible" data-class-fading="notify_3_fading">{{ notify_3 }}</div>
+            </div>
+
+        </div>
+
+        <!-- ========== Top-Right: Key Indicators ========== -->
+        <div class="visor-keys">
+            <div class="visor-key" data-class-owned="has_key1">
+                <span class="sys-label">KEY::SILVER</span>
+            </div>
+            <div class="visor-key" data-class-owned="has_key2">
+                <span class="sys-label">KEY::GOLD</span>
+            </div>
+        </div>
+
+        <!-- ========== Bottom-Left: Health + Armor ========== -->
+        <div class="visor-vitals">
+            <!-- Health -->
+            <div class="visor-panel visor-health" data-class-critical="health &lt; 25">
+                <span class="sys-label">HP</span>
+                <span class="stat-value stat-health">{{ health }}</span>
+                <div class="critical-tag" data-if="health &lt; 25">
+                    <span class="sys-label">CRITICAL</span>
+                </div>
+            </div>
+
+            <!-- Armor -->
+            <div class="visor-panel visor-armor" data-if="armor > 0"
+                 data-class-armor-green="armor_type == 1"
+                 data-class-armor-yellow="armor_type == 2"
+                 data-class-armor-red="armor_type == 3">
+                <span class="sys-label">ARM</span>
+                <span class="stat-value stat-armor">{{ armor }}</span>
+            </div>
+        </div>
+
+        <!-- ========== Bottom-Center: Mode-Adaptive ========== -->
+
+        <!-- SP: Objectives -->
+        <div class="visor-objectives" data-if="!deathmatch">
+            <div class="visor-panel visor-obj">
+                <span class="sys-label">KILL</span>
+                <span class="stat-value stat-obj">{{ monsters }}/{{ total_monsters }}</span>
+            </div>
+            <div class="visor-panel visor-obj">
+                <span class="sys-label">SCRT</span>
+                <span class="stat-value stat-obj">{{ secrets }}/{{ total_secrets }}</span>
+            </div>
+            <div class="visor-panel visor-obj">
+                <span class="sys-label">TIME</span>
+                <span class="stat-value stat-obj">{{ time_minutes }}:{{ time_seconds }}</span>
+            </div>
+        </div>
+
+        <!-- DM: Mini-Scoreboard -->
+        <div class="visor-dm-scores" data-if="deathmatch">
+            <div class="visor-panel visor-scores-panel">
+                <span class="sys-label">DM::SCORES</span>
+                <div class="dm-player-list">
+                    <div class="dm-player-row" data-for="player : players" data-class-local="player.is_local">
+                        <span class="dm-name">{{ player.name }}</span>
+                        <span class="dm-frags">{{ player.frags }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Bottom-Right: Weapon Readout ========== -->
+        <div class="visor-weapon-area"
+             data-class-shells="is_shells_weapon"
+             data-class-nails="is_nails_weapon"
+             data-class-rockets="is_rockets_weapon"
+             data-class-cells="is_cells_weapon">
+
+            <!-- Weapon Name -->
+            <div class="visor-weapon-name">
+                <span class="sys-label visor-weapon-label">WPN::{{ weapon_label }}</span>
+            </div>
+
+            <!-- Ammo Panel (hidden for axe) -->
+            <div class="visor-panel visor-ammo" data-if="!is_axe" data-class-low="ammo &lt; 10">
+                <span class="sys-label">AMMO</span>
+                <span class="stat-value stat-ammo">{{ ammo }}</span>
+            </div>
+
+            <!-- Melee fallback -->
+            <div class="visor-melee" data-if="is_axe">
+                <span class="sys-label">MELEE</span>
+            </div>
+
+            <!-- Ammo Reserves Strip -->
+            <div class="visor-reserves" data-if="!is_axe">
+                <span class="reserve" data-class-active="is_shells_weapon">S {{ shells }}</span>
+                <span class="reserve" data-class-active="is_nails_weapon">N {{ nails }}</span>
+                <span class="reserve" data-class-active="is_rockets_weapon">R {{ rockets }}</span>
+                <span class="reserve" data-class-active="is_cells_weapon">C {{ cells }}</span>
+            </div>
+        </div>
+
+        <!-- ========== Centerprint ========== -->
+        <div class="visor-centerprint-area" data-if="centerprint_visible" data-class-fading="centerprint_fading">
+            <span class="sys-label centerprint-tag">INCOMING TRANSMISSION</span>
+            <div class="visor-centerprint-text">{{ centerprint }}</div>
+        </div>
+
+        <!-- ========== Chat Input ========== -->
+        <div class="visor-chat" data-if="chat_active">
+            <span class="sys-label">COM::</span>
+            <span class="chat-prefix">{{ chat_prefix }}</span>
+            <span class="chat-text">{{ chat_text }}</span>
+        </div>
+
+    </div>
+
+    <!-- Crosshair stays outside safe zone — always true viewport center -->
+    <div class="crosshair" data-if="reticle_style > 0">
+        <lottie data-attr-src="reticle_src"/>
+    </div>
+
+</body>
+</rml>

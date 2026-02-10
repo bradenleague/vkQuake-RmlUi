@@ -1,172 +1,1042 @@
-body.lab-hud {
+/*
+ * Terminal Visor HUD — lab_hud.rcss
+ *
+ * Diegetic visor display with green-on-dark terminal aesthetic.
+ * 5-tier health palette, powerup overrides, CSS visor glitch.
+ *
+ * Typography: Space Mono (monospace labels/values), Space Grotesk (body text)
+ * Layout: Asymmetric L-shape — status left, vitals bottom, center clear
+ */
+
+/* ============================================
+   Base Container
+   ============================================ */
+
+body.visor-hud {
     width: 100%;
     height: 100%;
-    color: #e8efe9;
     font-family: Space Grotesk;
     font-size: 16dp;
+    color: #c8e6c8;
+    pointer-events: none;
 }
 
-.lab-hud-top-left,
-.lab-hud-top-right,
-.lab-hud-bottom-left,
-.lab-hud-bottom-right,
-.lab-objectives,
-.lab-centerprint,
-.lab-notify,
-.lab-chat {
+/* Barrel-warp safe zone: insets all HUD content so edge elements
+   aren't pushed off-screen by the postprocess distortion.
+   Crosshair stays outside this — always true viewport center. */
+.visor-safe-zone {
     position: absolute;
+    top: 3%;
+    left: 3%;
+    width: 94%;
+    height: 94%;
 }
 
-.lab-hud-top-left {
-    top: 30dp;
-    left: 30dp;
+/* ============================================
+   Typography Classes
+   ============================================ */
+
+.sys-label {
+    font-family: Space Mono;
+    font-size: 11dp;
+    text-transform: uppercase;
+    letter-spacing: 1dp;
+    color: #5a8a5a;
+}
+
+.stat-value {
+    font-family: Space Mono;
+    font-size: 28dp;
+    color: #c8e6c8;
+}
+
+.stat-health {
+    font-size: 48dp;
+}
+
+.stat-armor {
+    font-size: 36dp;
+}
+
+.stat-ammo {
+    font-size: 40dp;
+}
+
+.stat-obj {
+    font-size: 18dp;
+}
+
+/* ============================================
+   Visor Chrome — Corner L-Brackets
+   ============================================ */
+
+.visor-bracket {
+    position: absolute;
+    width: 40dp;
+    height: 40dp;
+    pointer-events: none;
+    transition: border-color 0.5s quadratic-out;
+}
+
+.bracket-tl {
+    top: 12dp;
+    left: 12dp;
+    border-top: 2dp #3a6b3a;
+    border-left: 2dp #3a6b3a;
+}
+
+.bracket-tr {
+    top: 12dp;
+    right: 12dp;
+    border-top: 2dp #3a6b3a;
+    border-right: 2dp #3a6b3a;
+}
+
+.bracket-bl {
+    bottom: 12dp;
+    left: 12dp;
+    border-bottom: 2dp #3a6b3a;
+    border-left: 2dp #3a6b3a;
+}
+
+.bracket-br {
+    bottom: 12dp;
+    right: 12dp;
+    border-bottom: 2dp #3a6b3a;
+    border-right: 2dp #3a6b3a;
+}
+
+/* ============================================
+   Visor Header Bar
+   ============================================ */
+
+.visor-header {
+    position: absolute;
+    top: 14dp;
+    left: 60dp;
+    right: 60dp;
+    height: 22dp;
     display: flex;
-    gap: 8dp;
+    align-items: center;
+    gap: 10dp;
+    padding-left: 8dp;
+    border-bottom: 1dp #3a6b3a;
+    transition: border-color 0.5s quadratic-out;
 }
 
-.lab-chip {
-    padding: 6dp 10dp;
-    border: 1dp #789e7a;
-    background-color: #102217d0;
-    color: #d9f3d9;
-    font-size: 14dp;
+.visor-header .sys-label {
+    font-size: 10dp;
+    color: #5a8a5a;
 }
 
-.lab-hud-top-right {
-    top: 30dp;
-    right: 30dp;
+.visor-header-sep {
+    font-family: Space Mono;
+    font-size: 10dp;
+    color: #3a6b3a;
+}
+
+/* ============================================
+   Left Column
+   ============================================ */
+
+.visor-left-col {
+    position: absolute;
+    top: 50dp;
+    left: 22dp;
     display: flex;
     flex-direction: column;
+    gap: 10dp;
+    max-width: 320dp;
+}
+
+/* ── Powerup Badges ── */
+
+.visor-powerups {
+    display: flex;
+    flex-direction: column;
+    gap: 6dp;
+}
+
+.visor-powerup {
+    padding: 5dp 10dp;
+    border: 1dp #3a6b3a;
+    background-color: #0a1a0ed8;
+    animation: 0.25s quadratic-out powerup-enter;
+    transition: border-color background-color 0.5s quadratic-out;
+}
+
+@keyframes powerup-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(-8dp);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0dp);
+    }
+}
+
+/* ── Sigil Tracker ── */
+
+.visor-sigils {
+    display: flex;
+    align-items: center;
     gap: 8dp;
+    padding: 5dp 10dp;
+    border: 1dp #3a6b3a;
+    background-color: #0a1a0ed8;
+    transition: border-color 0.5s quadratic-out;
+}
+
+.sigil-slots {
+    display: flex;
+    gap: 6dp;
+}
+
+.sigil-slot {
+    font-family: Space Mono;
+    font-size: 11dp;
+    color: #2a4a2a;
+    padding: 2dp 5dp;
+    border: 1dp #2a4a2a;
+    transition: color border-color 0.3s quadratic-out;
+}
+
+.sigil-slot.owned {
+    color: #4aaa4a;
+    border-color: #4aaa4a;
+}
+
+/* ── Notify Messages ── */
+
+.visor-notify {
+    display: flex;
+    flex-direction: column;
+    gap: 3dp;
+    max-width: 600dp;
+}
+
+.notify-line {
+    font-family: Space Grotesk;
+    font-size: 15dp;
+    color: #c8e6c8;
+    padding: 2dp 6dp;
+    animation: 0.2s quadratic-out notify-enter;
+}
+
+.notify-line.fading {
+    opacity: 0.35;
+}
+
+@keyframes notify-enter {
+    0% {
+        opacity: 0;
+        transform: translateX(-12dp);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0dp);
+    }
+}
+
+/* ============================================
+   Top-Right: Key Indicators
+   ============================================ */
+
+.visor-keys {
+    position: absolute;
+    top: 50dp;
+    right: 22dp;
+    display: flex;
+    flex-direction: column;
+    gap: 6dp;
     align-items: flex-end;
 }
 
-.lab-key {
-    padding: 6dp 12dp;
-    border: 1dp #6d7f6d;
-    background-color: #161616cc;
-    color: #7f8f7f;
-    font-size: 13dp;
+.visor-key {
+    padding: 5dp 10dp;
+    border: 1dp #2a4a2a;
+    background-color: #0a1a0e80;
+    transition: border-color background-color 0.3s quadratic-out;
 }
 
-.lab-key.owned {
+.visor-key .sys-label {
+    color: #2a4a2a;
+    transition: color 0.3s quadratic-out;
+}
+
+.visor-key.owned {
     border-color: #d7b65c;
-    color: #ffd88a;
+    background-color: #1a1608d8;
 }
 
-.lab-hud-bottom-left {
-    left: 28dp;
-    bottom: 26dp;
+.visor-key.owned .sys-label {
+    color: #d7b65c;
+}
+
+/* ============================================
+   Bottom-Left: Health + Armor (Vitals)
+   ============================================ */
+
+.visor-vitals {
+    position: absolute;
+    left: 22dp;
+    bottom: 22dp;
+    display: flex;
+    gap: 10dp;
+    align-items: flex-end;
+}
+
+/* ── Shared Panel Style ── */
+
+.visor-panel {
+    padding: 8dp 12dp;
+    border: 1dp #3a6b3a;
+    background-color: #0a1a0ed8;
+    transition: border-color background-color color 0.5s quadratic-out;
+}
+
+/* ── Health ── */
+
+.visor-health {
+    display: flex;
+    flex-direction: column;
+    gap: 2dp;
+}
+
+.visor-health.critical {
+    border-color: #8a2a2a;
+    background-color: #1a0a0ad8;
+}
+
+.critical-tag {
+    animation: 0.8s linear critical-blink infinite;
+}
+
+.critical-tag .sys-label {
+    color: #e67878;
+    font-size: 10dp;
+}
+
+@keyframes critical-blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ── Armor ── */
+
+.visor-armor {
+    display: flex;
+    flex-direction: column;
+    gap: 2dp;
+}
+
+.visor-armor.armor-green .sys-label {
+    color: #5a8a5a;
+}
+
+.visor-armor.armor-yellow {
+    border-color: #8a7a2a;
+}
+
+.visor-armor.armor-yellow .sys-label {
+    color: #aa9a3a;
+}
+
+.visor-armor.armor-yellow .stat-value {
+    color: #e6d89a;
+}
+
+.visor-armor.armor-red {
+    border-color: #8a3a3a;
+}
+
+.visor-armor.armor-red .sys-label {
+    color: #aa5a3a;
+}
+
+.visor-armor.armor-red .stat-value {
+    color: #e6a878;
+}
+
+/* ============================================
+   Bottom-Center: Objectives (SP) / Scores (DM)
+   ============================================ */
+
+.visor-objectives {
+    position: absolute;
+    left: 50%;
+    bottom: 22dp;
+    transform: translateX(-50%);
     display: flex;
     gap: 8dp;
 }
 
-.lab-hud-bottom-right {
-    right: 28dp;
-    bottom: 26dp;
+.visor-obj {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2dp;
+    min-width: 70dp;
+}
+
+/* ── DM Scores ── */
+
+.visor-dm-scores {
+    position: absolute;
+    left: 50%;
+    bottom: 22dp;
+    transform: translateX(-50%);
+}
+
+.visor-scores-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 4dp;
+    min-width: 200dp;
+}
+
+.dm-player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2dp;
+}
+
+.dm-player-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16dp;
+    padding: 2dp 4dp;
+}
+
+.dm-player-row.local {
+    border: 1dp #4aaa4a;
+}
+
+.dm-name {
+    font-family: Space Mono;
+    font-size: 12dp;
+    color: #c8e6c8;
+}
+
+.dm-frags {
+    font-family: Space Mono;
+    font-size: 12dp;
+    color: #4aaa4a;
+}
+
+/* ============================================
+   Bottom-Right: Weapon Readout
+   ============================================ */
+
+.visor-weapon-area {
+    position: absolute;
+    right: 22dp;
+    bottom: 22dp;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 6dp;
 }
 
-.lab-stat {
-    display: flex;
-    align-items: center;
-    gap: 8dp;
-    padding: 8dp 12dp;
-    border: 1dp #4d6a56;
-    background-color: #0d1d14d8;
+.visor-weapon-name {
+    transition: color 0.3s quadratic-out;
 }
 
-.lab-stat.big {
-    padding: 10dp 14dp;
-}
-
-.lab-stat .label {
-    font-size: 12dp;
-    color: #9db7a3;
-}
-
-.lab-stat .value {
-    font-size: 28dp;
-    color: #e8efe9;
-}
-
-.lab-stat.low {
-    border-color: #ca6a6a;
-    background-color: #2e1212d8;
-}
-
-.lab-weapon {
-    font-size: 18dp;
-    letter-spacing: 1dp;
-    color: #b0d7b4;
-}
-
-.lab-reserve {
-    display: flex;
-    gap: 8dp;
+.visor-weapon-label {
     font-size: 13dp;
-    color: #8ca88f;
+    color: #4aaa4a;
+    letter-spacing: 2dp;
 }
 
-.lab-reserve span.active {
-    color: #f5d88b;
+/* Per-weapon-type accent color on weapon label */
+.visor-weapon-area.shells .visor-weapon-label {
+    color: #aa8844;
 }
 
-.lab-objectives {
-    left: 50%;
-    bottom: 28dp;
-    transform: translateX(-50%);
+.visor-weapon-area.nails .visor-weapon-label {
+    color: #8888aa;
+}
+
+.visor-weapon-area.rockets .visor-weapon-label {
+    color: #aa5533;
+}
+
+.visor-weapon-area.cells .visor-weapon-label {
+    color: #5588aa;
+}
+
+.visor-ammo {
     display: flex;
-    gap: 16dp;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2dp;
+}
+
+.visor-ammo.low {
+    border-color: #8a2a2a;
+}
+
+.visor-ammo.low .stat-value {
+    color: #e67878;
+}
+
+.visor-melee {
     padding: 8dp 12dp;
-    border: 1dp #4f6f57;
-    background-color: #112117d8;
+}
+
+.visor-melee .sys-label {
+    color: #5a8a5a;
     font-size: 14dp;
 }
 
-.lab-centerprint {
+/* ── Ammo Reserves Strip ── */
+
+.visor-reserves {
+    display: flex;
+    gap: 10dp;
+}
+
+.reserve {
+    font-family: Space Mono;
+    font-size: 12dp;
+    color: #3a5a3a;
+    transition: color 0.2s quadratic-out;
+}
+
+.reserve.active {
+    color: #e6d89a;
+}
+
+/* ============================================
+   Crosshair — Lottie reticle (center screen)
+   ============================================ */
+
+.crosshair {
+    position: absolute;
+    top: 50%;
     left: 50%;
-    top: 48%;
     transform: translate(-50%, -50%);
-    max-width: 900dp;
+    pointer-events: none;
+}
+
+.crosshair lottie {
+    width: 48dp;
+    height: 48dp;
+}
+
+/* ============================================
+   Centerprint
+   ============================================ */
+
+.visor-centerprint-area {
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    max-width: 700dp;
     text-align: center;
-    padding: 12dp 16dp;
-    border: 1dp #7a9f80;
-    background-color: #15241ad8;
-    font-size: 24dp;
-    color: #ebf6e7;
-}
-
-.lab-centerprint.fading {
-    opacity: 0.45;
-}
-
-.lab-notify {
-    left: 30dp;
-    top: 96dp;
     display: flex;
     flex-direction: column;
-    gap: 4dp;
-    max-width: 760dp;
-    font-size: 16dp;
-    color: #d7ead8;
+    align-items: center;
+    gap: 6dp;
+    padding: 10dp 18dp;
+    border: 1dp #3a6b3a;
+    background-color: #0a1a0ee0;
+    animation: 0.3s quadratic-out centerprint-enter;
+    transition: border-color background-color 0.5s quadratic-out;
 }
 
-.lab-notify .fading {
-    opacity: 0.45;
+.visor-centerprint-area.fading {
+    opacity: 0.35;
 }
 
-.lab-chat {
+.centerprint-tag {
+    font-size: 9dp;
+    color: #3a6b3a;
+    letter-spacing: 2dp;
+}
+
+.visor-centerprint-text {
+    font-family: Space Grotesk;
+    font-size: 22dp;
+    color: #c8e6c8;
+}
+
+@keyframes centerprint-enter {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scaleX(0.9);
+    }
+    30% {
+        opacity: 0.4;
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scaleX(1);
+    }
+}
+
+/* ============================================
+   Chat Input
+   ============================================ */
+
+.visor-chat {
+    position: absolute;
     left: 50%;
-    bottom: 84dp;
+    bottom: 80dp;
     transform: translateX(-50%);
     display: flex;
     gap: 8dp;
-    padding: 8dp 12dp;
-    border: 1dp #4f6f57;
-    background-color: #102017e8;
-    font-size: 18dp;
+    padding: 8dp 14dp;
+    border: 1dp #3a6b3a;
+    background-color: #0a1a0ee8;
+    transition: border-color 0.5s quadratic-out;
+}
+
+.visor-chat .sys-label {
+    color: #4aaa4a;
+}
+
+.chat-prefix {
+    font-family: Space Mono;
+    font-size: 16dp;
+    color: #5a8a5a;
+}
+
+.chat-text {
+    font-family: Space Mono;
+    font-size: 16dp;
+    color: #c8e6c8;
+}
+
+/* ============================================
+   PHASE 4: Health Tier Palettes
+   ============================================
+
+   face_index: 0 (<40), 1 (40-59), 2 (60-79), 3 (80-99), 4 (100+)
+   Tier 4 = default palette (no overrides needed).
+   Each tier overrides borders, labels, text, backgrounds.
+*/
+
+/* ── Tier 3 (80-99 HP): Slight amber ── */
+
+.tier-3 .visor-bracket {
+    border-color: #5a6b3a;
+}
+
+.tier-3 .visor-header {
+    border-color: #5a6b3a;
+}
+
+.tier-3 .visor-header-sep {
+    color: #5a6b3a;
+}
+
+.tier-3 .sys-label {
+    color: #7a8a4a;
+}
+
+.tier-3 .stat-value {
+    color: #dae6c8;
+}
+
+.tier-3 .visor-panel {
+    border-color: #5a6b3a;
+    background-color: #0e1a0ad8;
+}
+
+.tier-3 .notify-line {
+    color: #dae6c8;
+}
+
+/* ── Tier 2 (60-79 HP): Warning amber ── */
+
+.tier-2 .visor-bracket {
+    border-color: #8a7a2a;
+}
+
+.tier-2 .visor-header {
+    border-color: #8a7a2a;
+}
+
+.tier-2 .visor-header-sep {
+    color: #8a7a2a;
+}
+
+.tier-2 .sys-label {
+    color: #aa9a3a;
+}
+
+.tier-2 .stat-value {
+    color: #e6d89a;
+}
+
+.tier-2 .visor-panel {
+    border-color: #8a7a2a;
+    background-color: #1a170ad8;
+}
+
+.tier-2 .visor-sigils {
+    border-color: #8a7a2a;
+}
+
+.tier-2 .sigil-slot.owned {
+    color: #aaaa3a;
+    border-color: #aaaa3a;
+}
+
+.tier-2 .notify-line {
+    color: #e6d89a;
+}
+
+.tier-2 .visor-centerprint-text {
+    color: #e6d89a;
+}
+
+/* ── Tier 1 (40-59 HP): Orange-red ── */
+
+.tier-1 .visor-bracket {
+    border-color: #8a4a2a;
+}
+
+.tier-1 .visor-header {
+    border-color: #8a4a2a;
+}
+
+.tier-1 .visor-header-sep {
+    color: #8a4a2a;
+}
+
+.tier-1 .sys-label {
+    color: #aa6a3a;
+}
+
+.tier-1 .stat-value {
+    color: #e6a878;
+}
+
+.tier-1 .visor-panel {
+    border-color: #8a4a2a;
+    background-color: #1a0e0ad8;
+}
+
+.tier-1 .visor-sigils {
+    border-color: #8a4a2a;
+}
+
+.tier-1 .sigil-slot.owned {
+    color: #aa6a3a;
+    border-color: #aa6a3a;
+}
+
+.tier-1 .notify-line {
+    color: #e6a878;
+}
+
+.tier-1 .visor-centerprint-text {
+    color: #e6a878;
+}
+
+/* ── Tier 0 (<40 HP): Critical red ── */
+
+.tier-0 .visor-bracket {
+    border-color: #8a2a2a;
+    animation: 0.8s linear critical-border-blink infinite;
+}
+
+.tier-0 .visor-header {
+    border-color: #8a2a2a;
+}
+
+.tier-0 .visor-header-sep {
+    color: #8a2a2a;
+}
+
+.tier-0 .sys-label {
+    color: #aa3a3a;
+}
+
+.tier-0 .stat-value {
+    color: #e67878;
+}
+
+.tier-0 .visor-panel {
+    border-color: #8a2a2a;
+    background-color: #1a0a0ad8;
+}
+
+.tier-0 .visor-sigils {
+    border-color: #8a2a2a;
+}
+
+.tier-0 .sigil-slot.owned {
+    color: #aa3a3a;
+    border-color: #aa3a3a;
+}
+
+.tier-0 .notify-line {
+    color: #e67878;
+}
+
+.tier-0 .visor-centerprint-text {
+    color: #e67878;
+}
+
+@keyframes critical-border-blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ============================================
+   PHASE 5: Powerup Overrides
+   ============================================
+
+   Powerup classes override tier colors.
+   Multiple powerups stack via CSS specificity.
+*/
+
+/* ── Quad Damage: Blue tint ── */
+
+.has-quad .visor-bracket {
+    border-color: #3388ff;
+    animation: 1.2s linear quad-pulse infinite;
+}
+
+.has-quad .visor-header {
+    border-color: #3388ff;
+}
+
+.has-quad .visor-panel {
+    border-color: #3388ff;
+    background-color: #0a0e1ad8;
+}
+
+.has-quad .sys-label {
+    color: #88bbff;
+}
+
+.has-quad .stat-value {
+    color: #c8d8f0;
+}
+
+.has-quad .visor-sigils {
+    border-color: #3388ff;
+}
+
+@keyframes quad-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ── Pentagram: Red/inverted ── */
+
+.has-pent .visor-bracket {
+    border-color: #ff4444;
+}
+
+.has-pent .visor-header {
+    border-color: #ff4444;
+}
+
+.has-pent .visor-panel {
+    border-color: #ff4444;
+    background-color: #1a0a0ae0;
+}
+
+.has-pent .sys-label {
+    color: #ff8888;
+}
+
+.has-pent .stat-value {
+    color: #ffcccc;
+}
+
+.has-pent .visor-sigils {
+    border-color: #ff4444;
+}
+
+/* ── Ring of Shadows: Ghost/fade ── */
+
+.has-ring .visor-panel {
+    opacity: 0.45;
+}
+
+.has-ring .visor-bracket {
+    opacity: 0.45;
+}
+
+.has-ring .visor-header {
+    opacity: 0.45;
+}
+
+.has-ring .sys-label {
+    color: #666666;
+}
+
+.has-ring .stat-value {
+    color: #999999;
+}
+
+.has-ring .visor-sigils {
+    opacity: 0.45;
+}
+
+/* ── Biosuit: Toxic green intensified ── */
+
+.has-suit .visor-bracket {
+    border-color: #44ff44;
+}
+
+.has-suit .visor-header {
+    border-color: #44ff44;
+}
+
+.has-suit .visor-panel {
+    border-color: #44ff44;
+    background-color: #0a1a0ae8;
+}
+
+.has-suit .sys-label {
+    color: #66ff66;
+}
+
+.has-suit .stat-value {
+    color: #ccffcc;
+}
+
+.has-suit .visor-sigils {
+    border-color: #44ff44;
+}
+
+/* ============================================
+   PHASE 6: Animations
+   ============================================ */
+
+/* ── 6a: Visor Glitch (face-pain from C++) ── */
+
+@keyframes visor-glitch {
+    0% {
+        opacity: 1;
+        transform: translateX(0dp);
+    }
+    15% {
+        opacity: 0.5;
+        transform: translateX(3dp);
+    }
+    30% {
+        opacity: 0.8;
+        transform: translateX(-2dp);
+    }
+    50% {
+        opacity: 0.3;
+    }
+    75% {
+        opacity: 0.9;
+        transform: translateX(1dp);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0dp);
+    }
+}
+
+.face-pain {
+    animation: 0.15s linear visor-glitch;
+}
+
+/* ── 6b: Weapon Switch Recalibration ── */
+
+@keyframes weapon-flicker {
+    0% {
+        opacity: 0.2;
+    }
+    20% {
+        opacity: 0;
+    }
+    40% {
+        opacity: 0.7;
+    }
+    55% {
+        opacity: 0.1;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes weapon-label-load {
+    0% {
+        opacity: 0;
+        transform: translateX(4dp);
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0dp);
+    }
+}
+
+.weapon-switched .visor-ammo {
+    animation: 0.2s linear weapon-flicker;
+}
+
+.weapon-switched .visor-weapon-label {
+    animation: 0.25s quadratic-out weapon-label-load;
+}
+
+.weapon-switched .visor-reserves {
+    animation: 0.2s linear weapon-flicker;
+}
+
+/* ── Powerup-specific badge colors ── */
+
+.powerup-quad .sys-label {
+    color: #88bbff;
+}
+
+.powerup-pent .sys-label {
+    color: #ff8888;
+}
+
+.powerup-ring .sys-label {
+    color: #888888;
+}
+
+.powerup-suit .sys-label {
+    color: #66ff66;
+}
+
+.powerup-quad {
+    border-color: #3388ff;
+    background-color: #0a0e1ad8;
+}
+
+.powerup-pent {
+    border-color: #ff4444;
+    background-color: #1a0a0ad8;
+}
+
+.powerup-ring {
+    border-color: #666666;
+    background-color: #0a0a0ad8;
+}
+
+.powerup-suit {
+    border-color: #44ff44;
+    background-color: #0a1a0ad8;
 }
