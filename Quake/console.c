@@ -519,7 +519,12 @@ void Con_Printf (const char *fmt, ...)
 #ifdef USE_RMLUI
 	// Forward to RmlUI notify area when in-game
 	if (cls.signon == SIGNONS)
-		UI_NotifyPrint (msg);
+	{
+		// Profiling lines can self-invalidate the HUD every second, skewing ui_speeds.
+		const qboolean is_ui_profile_line = !strncmp (msg, "ui(avg1s)", 9) || !strncmp (msg, "ui(update avg1s)", 16) || !strncmp (msg, "ui ", 3);
+		if (!is_ui_profile_line)
+			UI_NotifyPrint (msg);
+	}
 #endif
 
 	// update the screen if the console is displayed

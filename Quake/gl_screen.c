@@ -100,6 +100,9 @@ cvar_t scr_usekfont = {"scr_usekfont", "0", CVAR_NONE}; // 2021 re-release
 cvar_t scr_style = {"scr_style", "0", CVAR_ARCHIVE};
 cvar_t scr_uiscale = {"scr_uiscale", "1", CVAR_ARCHIVE};
 cvar_t scr_dpiscale = {"scr_dpiscale", "1", CVAR_ROM};
+#ifdef USE_RMLUI
+cvar_t ui_speeds = {"ui_speeds", "0", CVAR_NONE};
+#endif
 
 cvar_t scr_viewsize = {"viewsize", "100", CVAR_ARCHIVE};
 cvar_t scr_viewsize_allow_shrinking = {"viewsize_allow_shrinking", "0", CVAR_ARCHIVE};
@@ -638,6 +641,9 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_style);
 	Cvar_RegisterVariable (&scr_uiscale);
 	Cvar_RegisterVariable (&scr_dpiscale);
+#ifdef USE_RMLUI
+	Cvar_RegisterVariable (&ui_speeds);
+#endif
 	Cvar_RegisterVariable (&cl_gun_fovscale);
 
 	Cvar_RegisterVariable (&scr_relativescale);
@@ -1278,6 +1284,172 @@ static void SCR_DrawGUI (void *unused)
 	UI_Update (host_frametime);
 	UI_Render ();
 	UI_EndFrame ();
+	if (ui_speeds.value)
+	{
+		ui_perf_stats_t stats;
+		UI_GetPerfStats (&stats);
+
+		if (ui_speeds.value >= 2)
+		{
+			static double window_start = 0.0;
+			static int	  frame_count = 0;
+			static double sum_begin = 0.0;
+			static double sum_update = 0.0;
+			static double sum_update_dp = 0.0;
+			static double sum_update_model = 0.0;
+			static double sum_update_lua = 0.0;
+			static double sum_update_hud_logic = 0.0;
+			static double sum_update_notify = 0.0;
+			static double sum_update_context = 0.0;
+			static double sum_update_post = 0.0;
+			static double sum_render = 0.0;
+			static double sum_end = 0.0;
+			static double sum_total = 0.0;
+			static double sum_draw_calls = 0.0;
+			static double sum_triangles = 0.0;
+			static double worst_total = 0.0;
+			static double worst_update = 0.0;
+			static double worst_update_dp = 0.0;
+			static double worst_update_model = 0.0;
+			static double worst_update_lua = 0.0;
+			static double worst_update_hud_logic = 0.0;
+			static double worst_update_notify = 0.0;
+			static double worst_update_context = 0.0;
+			static double worst_update_post = 0.0;
+			static double worst_render = 0.0;
+			static const char *worst_update_culprit = "n/a";
+			static double	  worst_update_culprit_ms = 0.0;
+			static int	  max_draw_calls = 0;
+			static int	  max_triangles = 0;
+
+			if (window_start == 0.0)
+			{
+				window_start = realtime;
+			}
+
+			frame_count++;
+			sum_begin += stats.begin_ms;
+			sum_update += stats.update_ms;
+			sum_update_dp += stats.update_dp_ms;
+			sum_update_model += stats.update_model_ms;
+			sum_update_lua += stats.update_lua_ms;
+			sum_update_hud_logic += stats.update_hud_logic_ms;
+			sum_update_notify += stats.update_notify_ms;
+			sum_update_context += stats.update_context_ms;
+			sum_update_post += stats.update_post_ms;
+			sum_render += stats.render_ms;
+			sum_end += stats.end_ms;
+			sum_total += stats.total_ms;
+			sum_draw_calls += stats.draw_calls;
+			sum_triangles += stats.triangles;
+			if (stats.total_ms > worst_total)
+				worst_total = stats.total_ms;
+			if (stats.update_ms > worst_update)
+			{
+				worst_update = stats.update_ms;
+				worst_update_dp = stats.update_dp_ms;
+				worst_update_model = stats.update_model_ms;
+				worst_update_lua = stats.update_lua_ms;
+				worst_update_hud_logic = stats.update_hud_logic_ms;
+				worst_update_notify = stats.update_notify_ms;
+				worst_update_context = stats.update_context_ms;
+				worst_update_post = stats.update_post_ms;
+				worst_update_culprit = "dp";
+				worst_update_culprit_ms = worst_update_dp;
+				if (worst_update_model > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "model";
+					worst_update_culprit_ms = worst_update_model;
+				}
+				if (worst_update_lua > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "lua";
+					worst_update_culprit_ms = worst_update_lua;
+				}
+				if (worst_update_hud_logic > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "hud";
+					worst_update_culprit_ms = worst_update_hud_logic;
+				}
+				if (worst_update_notify > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "notify";
+					worst_update_culprit_ms = worst_update_notify;
+				}
+				if (worst_update_context > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "context";
+					worst_update_culprit_ms = worst_update_context;
+				}
+				if (worst_update_post > worst_update_culprit_ms)
+				{
+					worst_update_culprit = "post";
+					worst_update_culprit_ms = worst_update_post;
+				}
+			}
+			if (stats.render_ms > worst_render)
+				worst_render = stats.render_ms;
+			if (stats.draw_calls > max_draw_calls)
+				max_draw_calls = stats.draw_calls;
+			if (stats.triangles > max_triangles)
+				max_triangles = stats.triangles;
+
+			if (realtime - window_start >= 1.0)
+			{
+				double inv = frame_count > 0 ? 1.0 / frame_count : 0.0;
+				Con_Printf (
+					"ui(avg1s) %5.2f ms total (begin %4.2f update %4.2f render %4.2f end %4.2f) worst %5.2f ms (update %4.2f render %4.2f, culprit %s %.2f) dc %.1f/%d tri %.1f/%d\n",
+					sum_total * inv, 
+					sum_begin * inv, sum_update * inv, sum_render * inv, sum_end * inv, worst_total, worst_update, worst_render, worst_update_culprit,
+					worst_update_culprit_ms, sum_draw_calls * inv, max_draw_calls, sum_triangles * inv, max_triangles);
+
+				if (ui_speeds.value >= 3)
+				{
+					Con_Printf (
+						"ui(update avg1s) dp %.2f model %.2f lua %.2f hud %.2f notify %.2f context %.2f post %.2f\n", sum_update_dp * inv,
+						sum_update_model * inv, sum_update_lua * inv, sum_update_hud_logic * inv, sum_update_notify * inv, sum_update_context * inv,
+						sum_update_post * inv);
+				}
+
+				window_start = realtime;
+				frame_count = 0;
+				sum_begin = 0.0;
+				sum_update = 0.0;
+				sum_update_dp = 0.0;
+				sum_update_model = 0.0;
+				sum_update_lua = 0.0;
+				sum_update_hud_logic = 0.0;
+				sum_update_notify = 0.0;
+				sum_update_context = 0.0;
+				sum_update_post = 0.0;
+				sum_render = 0.0;
+				sum_end = 0.0;
+				sum_total = 0.0;
+				sum_draw_calls = 0.0;
+				sum_triangles = 0.0;
+				worst_total = 0.0;
+				worst_update = 0.0;
+				worst_update_dp = 0.0;
+				worst_update_model = 0.0;
+				worst_update_lua = 0.0;
+				worst_update_hud_logic = 0.0;
+				worst_update_notify = 0.0;
+				worst_update_context = 0.0;
+				worst_update_post = 0.0;
+				worst_update_culprit = "n/a";
+				worst_update_culprit_ms = 0.0;
+				worst_render = 0.0;
+				max_draw_calls = 0;
+				max_triangles = 0;
+			}
+		}
+		else
+		{
+			Con_Printf (
+				"ui %5.2f ms (begin %4.2f update %4.2f render %4.2f end %4.2f) dc %d tri %d\n", stats.total_ms, stats.begin_ms, stats.update_ms,
+				stats.render_ms, stats.end_ms, stats.draw_calls, stats.triangles);
+		}
+	}
 	R_EndDebugUtilsLabel (cbx);
 #endif
 

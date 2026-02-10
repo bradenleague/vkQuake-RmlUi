@@ -163,6 +163,30 @@ extern "C"
 	/* Garbage collection - call after GPU fence wait to safely destroy resources */
 	void UI_CollectGarbage (void);
 
+	/* UI frame performance stats (CPU timings are in milliseconds) */
+	typedef struct ui_perf_stats_s
+	{
+		double begin_ms;
+		double update_ms;
+		double update_dp_ms;
+		double update_model_ms;
+		double update_lua_ms;
+		double update_hud_logic_ms;
+		double update_notify_ms;
+		double update_context_ms;
+		double update_post_ms;
+		double render_ms;
+		double end_ms;
+		double total_ms;
+		int	   draw_calls;
+		int	   indices;
+		int	   triangles;
+	} ui_perf_stats_t;
+	void UI_GetPerfStats (ui_perf_stats_t *out_stats);
+
+	/* Run Lua test suite (lua_test console command) */
+	void UI_RunLuaTests (void);
+
 #ifdef __cplusplus
 }
 #endif

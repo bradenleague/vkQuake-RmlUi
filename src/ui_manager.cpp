@@ -110,9 +110,18 @@ struct UIManagerState
 
 	// HiDPI pixel ratio (logical-to-physical, e.g. 2.0 on Retina)
 	float pixel_ratio = 1.0f;
+
+	// Frame performance stats (CPU-side)
+	ui_perf_stats_t perf_last{};
 };
 
 UIManagerState g_state;
+
+bool IsRmlUiEnabled ()
+{
+	// Runtime kill switch controlled by host.c
+	return Cvar_VariableValue ("ui_use_rmlui") != 0.0;
+}
 
 bool IsViewportSettledForMenuEnter ()
 {
@@ -477,7 +486,7 @@ extern "C"
 	// Process pending operations - MUST be called from main thread before rendering
 	void UI_ProcessPending (void)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		// Process pending operations BEFORE rendering can start
@@ -542,21 +551,34 @@ extern "C"
 
 	void UI_Update (double dt)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
+		double update_start = Sys_DoubleTime ();
+		double phase_start = update_start;
 
 		// Recompute dp ratio each frame so scr_uiscale changes take effect live.
 		UpdateDpRatio ();
+		double phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_dp_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
 
 		// Note: Pending operations are now processed in UI_ProcessPending()
 		// which is called from the main thread before rendering tasks start.
 
 		// Update game data model to sync with Quake state
 		QRmlUI::GameDataModel::Update ();
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_model_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
 
 #ifdef USE_LUA
 		// Push game state into Lua 'game' table after data model is current
 		QRmlUI::LuaBridge::Update ();
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_lua_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
+#else
+		g_state.perf_last.update_lua_ms = 0.0;
 #endif
 
 		// Weapon switch flicker — toggle "weapon-switched" class on HUD doc.
@@ -632,11 +654,20 @@ extern "C"
 				}
 			}
 		}
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_hud_logic_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
 
 		// Update notification expiry state
 		QRmlUI::NotificationModel::Update (realtime);
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_notify_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
 
 		g_state.context->Update ();
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_context_ms = (phase_end - phase_start) * 1000.0;
+		phase_start = phase_end;
 
 		// Apply deferred menu-enter class AFTER Update() has resolved styles.
 		// The delay ensures the document has computed its base state (opacity: 0)
@@ -680,13 +711,24 @@ extern "C"
 
 		// Clear any temporary suppression of UI change events after data bindings update.
 		QRmlUI::CvarBindingManager::NotifyUIUpdateComplete ();
+		phase_end = Sys_DoubleTime ();
+		g_state.perf_last.update_post_ms = (phase_end - phase_start) * 1000.0;
+		g_state.perf_last.update_ms = (Sys_DoubleTime () - update_start) * 1000.0;
 	}
 
 	void UI_Render (void)
 	{
-		if (!g_state.initialized || !g_state.context || !g_state.visible)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context || !g_state.visible)
 			return;
+		double render_start = Sys_DoubleTime ();
 		g_state.context->Render ();
+		g_state.perf_last.render_ms = (Sys_DoubleTime () - render_start) * 1000.0;
+		if (g_state.render_interface)
+		{
+			g_state.perf_last.draw_calls = static_cast<int> (g_state.render_interface->GetFrameDrawCalls ());
+			g_state.perf_last.indices = static_cast<int> (g_state.render_interface->GetFrameIndices ());
+			g_state.perf_last.triangles = g_state.perf_last.indices / 3;
+		}
 	}
 
 	void UI_Resize (int width, int height)
@@ -714,7 +756,7 @@ extern "C"
 
 	int UI_KeyEvent (int key, int scancode, int pressed, int repeat)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 		if (!g_state.visible && g_state.menu_stack.empty ())
 			return 0;
@@ -737,7 +779,7 @@ extern "C"
 
 	int UI_CharEvent (unsigned int codepoint)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 		if (!g_state.visible && g_state.menu_stack.empty ())
 			return 0;
@@ -756,7 +798,7 @@ extern "C"
 		g_state.last_mouse_x = px;
 		g_state.last_mouse_y = py;
 
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 		if (!g_state.visible && g_state.menu_stack.empty ())
 			return 0;
@@ -768,7 +810,7 @@ extern "C"
 
 	int UI_MouseButton (int button, int pressed)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 		if (!g_state.visible && g_state.menu_stack.empty ())
 			return 0;
@@ -814,7 +856,7 @@ extern "C"
 
 	int UI_MouseScroll (float x, float y)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 		if (!g_state.visible && g_state.menu_stack.empty ())
 			return 0;
@@ -837,7 +879,7 @@ extern "C"
 			Con_Printf ("WARNING: UI_LoadDocument: null path\n");
 			return 0;
 		}
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return 0;
 
 		// Check if already loaded (use original path as key)
@@ -871,7 +913,7 @@ extern "C"
 			Con_Printf ("WARNING: UI_UnloadDocument: null path\n");
 			return;
 		}
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		auto it = g_state.documents.find (path);
@@ -892,7 +934,7 @@ extern "C"
 			Con_Printf ("WARNING: UI_ShowDocument: null path\n");
 			return;
 		}
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		auto it = g_state.documents.find (path);
@@ -916,7 +958,7 @@ extern "C"
 			Con_Printf ("WARNING: UI_HideDocument: null path\n");
 			return;
 		}
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		auto it = g_state.documents.find (path);
@@ -928,27 +970,38 @@ extern "C"
 
 	void UI_SetVisible (int visible)
 	{
+		if (!IsRmlUiEnabled ())
+		{
+			g_state.visible = false;
+			return;
+		}
 		g_state.visible = visible != 0;
 	}
 
 	int UI_IsVisible (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return 0;
 		return g_state.visible ? 1 : 0;
 	}
 
 	int UI_IsMenuVisible (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return 0;
 		return HasVisibleMenuDocument () ? 1 : 0;
 	}
 
 	void UI_Toggle (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		g_state.visible = !g_state.visible;
 	}
 
 	void UI_ToggleDebugger (void)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 		Rml::Debugger::SetVisible (!Rml::Debugger::IsVisible ());
 	}
@@ -956,7 +1009,7 @@ extern "C"
 	void UI_ReloadDocuments (void)
 	{
 #ifdef QRMLUI_HOT_RELOAD
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		Con_DPrintf ("UI_ReloadDocuments: Reloading all documents\n");
@@ -1000,7 +1053,7 @@ extern "C"
 	void UI_ReloadStyleSheets (void)
 	{
 #ifdef QRMLUI_HOT_RELOAD
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		Con_DPrintf ("UI_ReloadStyleSheets: Reloading stylesheets\n");
@@ -1074,33 +1127,68 @@ extern "C"
 	// Called each frame before UI rendering
 	void UI_BeginFrame (void *cmd, int width, int height)
 	{
+		if (!IsRmlUiEnabled ())
+		{
+			g_state.perf_last = ui_perf_stats_t{};
+			return;
+		}
+		double begin_start = Sys_DoubleTime ();
+		g_state.perf_last = ui_perf_stats_t{};
 		if (g_state.render_interface)
 		{
 			g_state.render_interface->BeginFrame (static_cast<VkCommandBuffer> (cmd), width, height);
 		}
+		g_state.perf_last.begin_ms = (Sys_DoubleTime () - begin_start) * 1000.0;
 	}
 
 	// Called after UI rendering
 	void UI_EndFrame (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
+		double end_start = Sys_DoubleTime ();
 		if (g_state.render_interface)
 		{
 			g_state.render_interface->EndFrame ();
 		}
+		g_state.perf_last.end_ms = (Sys_DoubleTime () - end_start) * 1000.0;
+		g_state.perf_last.total_ms = g_state.perf_last.begin_ms + g_state.perf_last.update_ms + g_state.perf_last.render_ms + g_state.perf_last.end_ms;
 	}
 
 	// Garbage collection - call after GPU fence wait
 	void UI_CollectGarbage (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (g_state.render_interface)
 		{
 			g_state.render_interface->CollectGarbage ();
 		}
 	}
 
+	void UI_GetPerfStats (ui_perf_stats_t *out_stats)
+	{
+		if (!out_stats)
+		{
+			return;
+		}
+		if (!IsRmlUiEnabled ())
+		{
+			*out_stats = ui_perf_stats_t{};
+			return;
+		}
+		*out_stats = g_state.perf_last;
+	}
+
 	// Input mode control
 	void UI_SetInputMode (ui_input_mode_t mode)
 	{
+		if (!IsRmlUiEnabled ())
+		{
+			g_state.input_mode = UI_INPUT_INACTIVE;
+			g_state.visible = false;
+			return;
+		}
 		ui_input_mode_t old_mode = g_state.input_mode;
 		g_state.input_mode = mode;
 
@@ -1131,12 +1219,14 @@ extern "C"
 
 	ui_input_mode_t UI_GetInputMode (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return UI_INPUT_INACTIVE;
 		return g_state.input_mode;
 	}
 
 	int UI_WantsMenuInput (void)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 		{
 			return 0;
 		}
@@ -1155,12 +1245,14 @@ extern "C"
 
 	int UI_WantsInput (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return 0;
 		return UI_WantsMenuInput () || UI_IsMenuVisible ();
 	}
 
 	void UI_HandleEscape (void)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		// Defer the actual escape handling to the next UI_Update call.
@@ -1172,7 +1264,7 @@ extern "C"
 
 	void UI_CloseAllMenus (void)
 	{
-		if (!g_state.initialized || !g_state.context)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context)
 			return;
 
 		// Defer closing all menus to the next UI_Update call.
@@ -1209,7 +1301,7 @@ extern "C"
 
 	void UI_PushMenu (const char *path)
 	{
-		if (!g_state.initialized || !g_state.context || !path)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !g_state.context || !path)
 			return;
 
 		// Cancel any pending close requests since we're explicitly opening a menu.
@@ -1295,6 +1387,8 @@ extern "C"
 
 	void UI_ShowHUD (const char *hud_document)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (!hud_document)
 		{
 			hud_document = QRmlUI::Paths::kHud;
@@ -1328,6 +1422,8 @@ extern "C"
 
 	void UI_HideHUD (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (!g_state.current_hud.empty () && g_state.hud_visible)
 		{
 			UI_HideDocument (g_state.current_hud.c_str ());
@@ -1353,11 +1449,15 @@ extern "C"
 
 	int UI_IsHUDVisible (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return 0;
 		return g_state.hud_visible ? 1 : 0;
 	}
 
 	void UI_ShowScoreboard (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (UI_LoadDocument (QRmlUI::Paths::kScoreboard))
 		{
 			UI_ShowDocument (QRmlUI::Paths::kScoreboard, 0);
@@ -1367,6 +1467,8 @@ extern "C"
 
 	void UI_HideScoreboard (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (g_state.scoreboard_visible)
 		{
 			UI_HideDocument (QRmlUI::Paths::kScoreboard);
@@ -1376,6 +1478,8 @@ extern "C"
 
 	void UI_ShowIntermission (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (UI_LoadDocument (QRmlUI::Paths::kIntermission))
 		{
 			UI_ShowDocument (QRmlUI::Paths::kIntermission, 0);
@@ -1385,6 +1489,8 @@ extern "C"
 
 	void UI_HideIntermission (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (g_state.intermission_visible)
 		{
 			UI_HideDocument (QRmlUI::Paths::kIntermission);
@@ -1398,6 +1504,8 @@ extern "C"
 		const int *stats, int stats_count, int items, int intermission, int gametype, int maxclients, const char *level_name, const char *map_name,
 		double game_time)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		// Ensure OVERLAY mode if HUD is visible and no menu is open
 		if (g_state.hud_visible && !UI_WantsMenuInput ())
 		{
@@ -1428,7 +1536,7 @@ extern "C"
 
 	void UI_SyncScoreboard (const ui_player_info_t *players, int count)
 	{
-		if (!g_state.initialized)
+		if (!IsRmlUiEnabled () || !g_state.initialized)
 			return;
 
 		QRmlUI::g_game_state.players.clear ();
@@ -1452,14 +1560,14 @@ extern "C"
 
 	void UI_NotifyCenterPrint (const char *text)
 	{
-		if (!g_state.initialized || !text)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !text)
 			return;
 		QRmlUI::NotificationModel::CenterPrint (text, realtime);
 	}
 
 	void UI_NotifyPrint (const char *text)
 	{
-		if (!g_state.initialized || !text)
+		if (!IsRmlUiEnabled () || !g_state.initialized || !text)
 			return;
 		QRmlUI::NotificationModel::NotifyPrint (text, realtime);
 	}
@@ -1468,7 +1576,7 @@ extern "C"
 
 	void UI_SyncSaveSlots (const ui_save_slot_t *slots, int count)
 	{
-		if (!g_state.initialized)
+		if (!IsRmlUiEnabled () || !g_state.initialized)
 			return;
 
 		QRmlUI::g_game_state.save_slots.clear ();
@@ -1489,7 +1597,7 @@ extern "C"
 
 	void UI_SyncMods (const ui_mod_info_t *mods, int count)
 	{
-		if (!g_state.initialized)
+		if (!IsRmlUiEnabled () || !g_state.initialized)
 			return;
 
 		QRmlUI::g_game_state.mods.clear ();
@@ -1511,7 +1619,7 @@ extern "C"
 
 	void UI_SyncVideoModes (const ui_video_mode_t *modes, int count)
 	{
-		if (!g_state.initialized)
+		if (!IsRmlUiEnabled () || !g_state.initialized)
 			return;
 
 		QRmlUI::CvarBindingManager::SyncVideoModes (modes, count);
@@ -1521,11 +1629,15 @@ extern "C"
 
 	int UI_IsCapturingKey (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return 0;
 		return MenuEventHandler_IsCapturingKey ();
 	}
 
 	void UI_OnKeyCaptured (int key, const char *key_name)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		if (!key_name)
 		{
 			Con_Printf ("WARNING: UI_OnKeyCaptured: null key_name\n");
@@ -1536,7 +1648,25 @@ extern "C"
 
 	void UI_CancelKeyCapture (void)
 	{
+		if (!IsRmlUiEnabled ())
+			return;
 		QRmlUI::MenuEventHandler::CancelKeyCapture ();
+	}
+
+	// ── Lua test harness ──────────────────────────────────────────────
+
+	void UI_RunLuaTests (void)
+	{
+#ifdef USE_LUA
+		if (!g_state.initialized)
+		{
+			Con_Printf ("UI_RunLuaTests: UI not initialized\n");
+			return;
+		}
+		QRmlUI::LuaBridge::RunTests ();
+#else
+		Con_Printf ("UI_RunLuaTests: Lua support not compiled in\n");
+#endif
 	}
 
 } // extern "C"

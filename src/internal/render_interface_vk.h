@@ -70,6 +70,16 @@ class RenderInterface_VK : public Rml::RenderInterface
 	void BeginFrame (VkCommandBuffer cmd, int width, int height);
 	void EndFrame ();
 
+	// Per-frame render stats (reset in BeginFrame)
+	uint32_t GetFrameDrawCalls () const
+	{
+		return m_frame_draw_calls;
+	}
+	uint32_t GetFrameIndices () const
+	{
+		return m_frame_indices;
+	}
+
 	// Garbage collection - call after GPU fence wait to safely destroy resources
 	void CollectGarbage ();
 
@@ -152,6 +162,8 @@ class RenderInterface_VK : public Rml::RenderInterface
 	VkRect2D		m_scissor_rect;
 	Rml::Matrix4f	m_transform;
 	bool			m_transform_enabled;
+	uint32_t		m_frame_draw_calls;
+	uint32_t		m_frame_indices;
 
 	// Vulkan resources
 	VkPipeline			  m_pipeline_textured;

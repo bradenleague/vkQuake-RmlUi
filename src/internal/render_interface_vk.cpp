@@ -27,9 +27,9 @@ namespace QRmlUI
 
 RenderInterface_VK::RenderInterface_VK ()
 	: m_config{}, m_current_cmd (VK_NULL_HANDLE), m_viewport_width (0), m_viewport_height (0), m_scissor_enabled (false), m_scissor_rect{},
-	  m_transform_enabled (false), m_pipeline_textured (VK_NULL_HANDLE), m_pipeline_untextured (VK_NULL_HANDLE), m_pipeline_layout (VK_NULL_HANDLE),
-	  m_descriptor_pool (VK_NULL_HANDLE), m_texture_set_layout (VK_NULL_HANDLE), m_sampler (VK_NULL_HANDLE), m_white_texture (nullptr),
-	  m_next_geometry_handle (1), m_next_texture_handle (1), m_initialized (false), m_garbage_index (0)
+	  m_transform_enabled (false), m_frame_draw_calls (0), m_frame_indices (0), m_pipeline_textured (VK_NULL_HANDLE), m_pipeline_untextured (VK_NULL_HANDLE),
+	  m_pipeline_layout (VK_NULL_HANDLE), m_descriptor_pool (VK_NULL_HANDLE), m_texture_set_layout (VK_NULL_HANDLE), m_sampler (VK_NULL_HANDLE),
+	  m_white_texture (nullptr), m_next_geometry_handle (1), m_next_texture_handle (1), m_initialized (false), m_garbage_index (0)
 {
 	m_transform = Rml::Matrix4f::Identity ();
 }
@@ -235,6 +235,8 @@ void RenderInterface_VK::BeginFrame (VkCommandBuffer cmd, int width, int height)
 	m_current_cmd = cmd;
 	m_viewport_width = width;
 	m_viewport_height = height;
+	m_frame_draw_calls = 0;
+	m_frame_indices = 0;
 
 	// Set viewport
 	VkViewport viewport{};
@@ -434,6 +436,8 @@ void RenderInterface_VK::RenderGeometry (Rml::CompiledGeometryHandle geometry_ha
 	// Draw
 	auto draw_indexed = m_config.cmd_draw_indexed ? m_config.cmd_draw_indexed : vkCmdDrawIndexed;
 	draw_indexed (m_current_cmd, geometry->num_indices, 1, 0, 0, 0);
+	m_frame_draw_calls++;
+	m_frame_indices += static_cast<uint32_t> (geometry->num_indices);
 }
 
 void RenderInterface_VK::ReleaseGeometry (Rml::CompiledGeometryHandle geometry_handle)
