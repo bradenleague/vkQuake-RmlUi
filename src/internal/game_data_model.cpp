@@ -241,9 +241,7 @@ bool GameDataModel::Initialize (Rml::Context *context)
 
 	// Reticle (crosshair) bindings
 	constructor.Bind ("reticle_style", &g_game_state.reticle_style);
-	constructor.BindFunc (
-		"reticle_src",
-		[] (Rml::Variant &variant) { variant = ReticleSrcForStyle (g_game_state.reticle_style); });
+	constructor.BindFunc ("reticle_src", [] (Rml::Variant &variant) { variant = ReticleSrcForStyle (g_game_state.reticle_style); });
 
 	// Computed: active ammo type booleans for reserves highlight
 	constructor.BindFunc (

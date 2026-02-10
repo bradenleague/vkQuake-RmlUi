@@ -185,7 +185,7 @@ void IN_SendKeyEvents (void)
 			/* Check if RmlUI is capturing a key for key binding */
 			if (UI_IsCapturingKey () && down)
 			{
-				int			qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
+				int qkey = IN_SDL_ScancodeToQuakeKey (event.key.scancode);
 				if (qkey == K_ESCAPE)
 				{
 					UI_CancelKeyCapture ();

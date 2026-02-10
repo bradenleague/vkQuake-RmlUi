@@ -20,7 +20,13 @@
 #include <RmlUi/Debugger.h>
 
 // Lottie plugin — compiled into librmlui.a when RMLUI_LOTTIE_PLUGIN=ON
-namespace Rml { namespace Lottie { void Initialise(); } }
+namespace Rml
+{
+namespace Lottie
+{
+void Initialise ();
+}
+} // namespace Rml
 
 #include <SDL.h>
 #include <algorithm>
@@ -313,7 +319,7 @@ extern "C"
 				if (!root_dir || !root_dir[0])
 					return;
 
-				fs::path font_dir = fs::path (root_dir) / "ui" / "fonts";
+				fs::path		font_dir = fs::path (root_dir) / "ui" / "fonts";
 				std::error_code ec;
 				if (!fs::is_directory (font_dir, ec))
 					return;

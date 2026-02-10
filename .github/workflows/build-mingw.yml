@@ -36,14 +36,13 @@ jobs:
           mingw-w64-x86_64-opusfile
           mingw-w64-x86_64-mpg123
           mingw-w64-x86_64-libxmp
-          mingw-w64-x86_64-rlottie
 
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
     - name: Build vkQuake
-      run: meson setup build --buildtype=release && ninja -C build
+      run: meson setup build --buildtype=release -Duse_lottie=false && ninja -C build
 
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4

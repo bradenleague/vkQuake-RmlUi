@@ -15,9 +15,9 @@ jobs:
       with:
         submodules: recursive
     - name: Install Dependencies
-      run: brew install cmake molten-vk vulkan-headers glslang spirv-tools sdl2 libvorbis flac opus opusfile mpg123 freetype meson rlottie
+      run: brew install cmake molten-vk vulkan-headers glslang spirv-tools sdl2 libvorbis flac opus opusfile mpg123 freetype meson
     - name: Build vkQuake
-      run: meson setup build --buildtype=${{ matrix.configuration }} && ninja -C build
+      run: meson setup build --buildtype=${{ matrix.configuration }} -Duse_lottie=false && ninja -C build
     - name: Upload vkQuake
       uses: actions/upload-artifact@v4
       with:
