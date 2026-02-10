@@ -183,8 +183,33 @@
     </div>
 
     <!-- Crosshair stays outside safe zone — always true viewport center -->
-    <div class="crosshair" data-if="reticle_style > 0">
-        <lottie data-attr-src="reticle_src"/>
+    <div class="crosshair" data-if="reticle_style > 0"
+         data-class-firing="fire_flash"
+         data-class-equipping="weapon_show">
+        <!-- Cross (style 1) -->
+        <reticle data-if="reticle_style == 1">
+            <reticle-line angle="0" />
+            <reticle-line angle="90" />
+            <reticle-line angle="180" />
+            <reticle-line angle="270" />
+            <reticle-dot />
+        </reticle>
+        <!-- Dot (style 2) -->
+        <reticle data-if="reticle_style == 2">
+            <reticle-dot />
+            <reticle-ring />
+        </reticle>
+        <!-- Circle (style 3) -->
+        <reticle data-if="reticle_style == 3">
+            <reticle-ring class="outer" />
+            <reticle-ring class="inner" />
+        </reticle>
+        <!-- Chevron (style 4) -->
+        <reticle data-if="reticle_style == 4">
+            <reticle-arc class="upper" />
+            <reticle-arc class="lower" />
+            <reticle-dot />
+        </reticle>
     </div>
 
 </body>

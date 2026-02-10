@@ -62,24 +62,6 @@ static int ResolveReticleStyle (int active_weapon, ICvarProvider *provider)
 	return crosshair; // Player's fallback
 }
 
-// Map reticle style ID to Lottie asset path (relative to hud.rml).
-static Rml::String ReticleSrcForStyle (int style)
-{
-	switch (style)
-	{
-	case 1:
-		return "../../reticles/cross.json";
-	case 2:
-		return "../../reticles/dot.json";
-	case 3:
-		return "../../reticles/circle.json";
-	case 4:
-		return "../../reticles/chevron.json";
-	default:
-		return "";
-	}
-}
-
 // Global game state
 GameState g_game_state;
 
@@ -90,6 +72,13 @@ GameState			 GameDataModel::s_prev_state;
 bool				 GameDataModel::s_first_update = true;
 Rml::String			 GameDataModel::s_prev_gamedir;
 bool				 GameDataModel::s_was_chatting = false;
+
+// Reticle animation transient state
+static double s_weapon_show_time = 0.0;
+static double s_fire_flash_time = 0.0;
+static int	  s_prev_weaponframe = 0;
+static constexpr double WEAPON_SHOW_DURATION = 0.15;
+static constexpr double FIRE_FLASH_DURATION = 0.30;
 
 bool GameDataModel::Initialize (Rml::Context *context)
 {
@@ -241,7 +230,10 @@ bool GameDataModel::Initialize (Rml::Context *context)
 
 	// Reticle (crosshair) bindings
 	constructor.Bind ("reticle_style", &g_game_state.reticle_style);
-	constructor.BindFunc ("reticle_src", [] (Rml::Variant &variant) { variant = ReticleSrcForStyle (g_game_state.reticle_style); });
+
+	// Reticle animation triggers (class toggles for RCSS transitions)
+	constructor.Bind ("weapon_show", &g_game_state.weapon_show);
+	constructor.Bind ("fire_flash", &g_game_state.fire_flash);
 
 	// Computed: active ammo type booleans for reserves highlight
 	constructor.BindFunc (
@@ -500,8 +492,6 @@ void GameDataModel::Update ()
 
 	// Reticle (crosshair)
 	DIRTY_IF_CHANGED (reticle_style, "reticle_style")
-	if (g_game_state.reticle_style != s_prev_state.reticle_style)
-		s_model_handle.DirtyVariable ("reticle_src");
 
 	// Chat input (dirty every frame while active, plus one frame after close)
 	{
@@ -535,6 +525,15 @@ void GameDataModel::Update ()
 			any_dirty = true;
 		}
 	}
+
+	// Expire transient reticle animation flags
+	if (g_game_state.weapon_show && realtime - s_weapon_show_time > WEAPON_SHOW_DURATION)
+		g_game_state.weapon_show = false;
+	if (g_game_state.fire_flash && realtime - s_fire_flash_time > FIRE_FLASH_DURATION)
+		g_game_state.fire_flash = false;
+
+	DIRTY_IF_CHANGED (weapon_show, "weapon_show")
+	DIRTY_IF_CHANGED (fire_flash, "fire_flash")
 
 #undef DIRTY_IF_CHANGED
 
@@ -676,6 +675,28 @@ extern "C"
 			int		   drop = s_prev_health - g_game_state.health;
 			g_game_state.face_pain = (drop >= 2 && s_prev_health > 0);
 			s_prev_health = g_game_state.health;
+		}
+
+		// Detect weapon switch (skip initial equip when prev was 0)
+		{
+			static int s_prev_active_weapon = 0;
+			if (g_game_state.active_weapon != s_prev_active_weapon && s_prev_active_weapon != 0)
+			{
+				g_game_state.weapon_show = true;
+				s_weapon_show_time = realtime;
+			}
+			s_prev_active_weapon = g_game_state.active_weapon;
+		}
+
+		// Detect fire: weaponframe transitions from 0 → non-zero
+		{
+			int wf = (stats_count > STAT_WEAPONFRAME) ? stats[STAT_WEAPONFRAME] : 0;
+			if (wf != 0 && s_prev_weaponframe == 0)
+			{
+				g_game_state.fire_flash = true;
+				s_fire_flash_time = realtime;
+			}
+			s_prev_weaponframe = wf;
 		}
 
 		// Resolve reticle style from crosshair cvar + per-weapon overrides

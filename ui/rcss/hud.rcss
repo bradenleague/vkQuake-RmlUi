@@ -98,57 +98,36 @@
     pointer-events: none;
 }
 
-.crosshair lottie {
+.crosshair reticle {
     width: 48dp;
     height: 48dp;
 }
 
-.crosshair-dot {
-    width: 4dp;
-    height: 4dp;
-    background-color: #ffffff;
+/* Reticle primitives: color inherited, render centered in parent */
+reticle-dot, reticle-line, reticle-ring, reticle-arc {
+    color: #ffffffcc;
 }
 
-.crosshair-lines {
-    position: relative;
-    width: 32dp;
-    height: 32dp;
+/* Default shape parameters */
+.crosshair reticle-dot { reticle-radius: 2dp; }
+.crosshair reticle-line { reticle-length: 8dp; reticle-width: 2dp; reticle-gap: 4dp; }
+.crosshair reticle-ring { reticle-radius: 10dp; reticle-stroke: 1.5dp; }
+.crosshair reticle-ring.inner { reticle-radius: 5dp; }
+.crosshair reticle-arc.upper { reticle-start-angle: 220; reticle-end-angle: 320; reticle-radius: 10dp; reticle-stroke: 2dp; }
+.crosshair reticle-arc.lower { reticle-start-angle: 40; reticle-end-angle: 140; reticle-radius: 10dp; reticle-stroke: 2dp; }
+
+/* Transitions on all reticle properties */
+reticle-dot, reticle-line, reticle-ring, reticle-arc {
+    transition: reticle-radius reticle-gap reticle-length reticle-stroke 0.25s quadratic-out;
 }
 
-.crosshair-line {
-    position: absolute;
-    background-color: #ffffff;
-}
+/* Fire animation: expand outward */
+.crosshair.firing reticle-line { reticle-gap: 7dp; }
+.crosshair.firing reticle-ring { reticle-radius: 14dp; }
 
-.crosshair-line.horizontal {
-    width: 10dp;
-    height: 2dp;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.crosshair-line.horizontal.left {
-    left: 0;
-}
-
-.crosshair-line.horizontal.right {
-    right: 0;
-}
-
-.crosshair-line.vertical {
-    width: 2dp;
-    height: 10dp;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.crosshair-line.vertical.top {
-    top: 0;
-}
-
-.crosshair-line.vertical.bottom {
-    bottom: 0;
-}
+/* Equip animation: collapse then restore */
+.crosshair.equipping reticle-line { reticle-gap: 1dp; reticle-length: 4dp; }
+.crosshair.equipping reticle-ring { reticle-radius: 4dp; }
 
 /* ============================================
    Level Stats

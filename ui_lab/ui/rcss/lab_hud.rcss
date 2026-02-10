@@ -513,7 +513,7 @@ body.visor-hud {
 }
 
 /* ============================================
-   Crosshair — Lottie reticle (center screen)
+   Crosshair — Reticle primitives (center screen)
    ============================================ */
 
 .crosshair {
@@ -524,10 +524,36 @@ body.visor-hud {
     pointer-events: none;
 }
 
-.crosshair lottie {
+.crosshair reticle {
     width: 48dp;
     height: 48dp;
 }
+
+/* Terminal visor green tint for reticle primitives */
+reticle-dot, reticle-line, reticle-ring, reticle-arc {
+    color: #4aaa4acc;
+}
+
+/* Default shape parameters */
+.crosshair reticle-dot { reticle-radius: 2dp; }
+.crosshair reticle-line { reticle-length: 8dp; reticle-width: 2dp; reticle-gap: 4dp; }
+.crosshair reticle-ring { reticle-radius: 10dp; reticle-stroke: 1.5dp; }
+.crosshair reticle-ring.inner { reticle-radius: 5dp; }
+.crosshair reticle-arc.upper { reticle-start-angle: 220; reticle-end-angle: 320; reticle-radius: 10dp; reticle-stroke: 2dp; }
+.crosshair reticle-arc.lower { reticle-start-angle: 40; reticle-end-angle: 140; reticle-radius: 10dp; reticle-stroke: 2dp; }
+
+/* Transitions on all reticle properties */
+reticle-dot, reticle-line, reticle-ring, reticle-arc {
+    transition: reticle-radius reticle-gap reticle-length reticle-stroke 0.25s quadratic-out;
+}
+
+/* Fire animation: expand outward */
+.crosshair.firing reticle-line { reticle-gap: 7dp; }
+.crosshair.firing reticle-ring { reticle-radius: 14dp; }
+
+/* Equip animation: collapse then restore */
+.crosshair.equipping reticle-line { reticle-gap: 1dp; reticle-length: 4dp; }
+.crosshair.equipping reticle-ring { reticle-radius: 4dp; }
 
 /* ============================================
    Centerprint

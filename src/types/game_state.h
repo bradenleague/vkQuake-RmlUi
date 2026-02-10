@@ -140,6 +140,10 @@ struct GameState
 	// Resolved reticle style: 0=off, 1=cross, 2=dot, 3=circle, 4=chevron
 	int reticle_style = 0;
 
+	// Transient animation triggers (reticle class toggles)
+	bool weapon_show = false;
+	bool fire_flash = false;
+
 	// Deathmatch player list (sorted by frags descending)
 	std::vector<PlayerInfo> players;
 	int						num_players = 0;
