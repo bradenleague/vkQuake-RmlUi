@@ -25,8 +25,28 @@ Copyright 2020 The Open Sans Project Authors
 (https://github.com/googlefonts/opensans)
 
 -----------------------------------------------------------
+---    Space Grotesk                                     ---
+---    https://fonts.google.com/specimen/Space+Grotesk   ---
+---                                                      ---
+---    SpaceGrotesk-Bold.ttf                             ---
+-----------------------------------------------------------
 
-Both fonts are licensed under the SIL Open Font License, Version 1.1.
+Copyright 2020 The Space Grotesk Project Authors
+(https://github.com/nicholasfontano/Space-Grotesk)
+
+-----------------------------------------------------------
+---    Space Mono                                        ---
+---    https://fonts.google.com/specimen/Space+Mono      ---
+---                                                      ---
+---    SpaceMono-Regular.ttf                             ---
+-----------------------------------------------------------
+
+Copyright 2016 The Space Mono Project Authors
+(https://github.com/googlefonts/spacemono)
+
+-----------------------------------------------------------
+
+All fonts are licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL
 
