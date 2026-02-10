@@ -68,6 +68,7 @@ CMakeFiles/
 cmake_install.cmake
 
 # SPIR-V compiled shaders
+Shaders/*.spv
 Shaders/Compiled/Debug/*.spv
 Shaders/Compiled/Debug/*.c
 Shaders/Compiled/Debug/*.d
@@ -83,16 +84,14 @@ Shaders/bintoc
 embedded_pak.c
 vkquake.pak
 
-# Visual Studio / Windows
+# Visual Studio
 *.suo
 vkquake.VC*
-Windows/VisualStudio/.vs
-Windows/VisualStudio/Build-*
-Windows/VisualStudio/enc_temp_folder
-Windows/VisualStudio/Id1
 
 # Packaging
 Packaging/AppImage/AppDir
+Packaging/AppImage/linuxdeploy*.AppImage
+Packaging/AppImage/ninja
 Packaging/AppImage/vkquake*
 Packaging/Windows/vkQuake-Installer-*.exe
 Packaging/Windows/vkQuake*.zip
