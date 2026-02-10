@@ -1,4 +1,4 @@
 [submodule "lib/rmlui"]
 	path = lib/rmlui
 	url = git@github.com:bradenleague/RmlUi.git
-	branch = rmlui
+	branch = master
