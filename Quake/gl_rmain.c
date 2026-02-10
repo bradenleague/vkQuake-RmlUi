@@ -25,8 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tasks.h"
 #include "atomics.h"
 #ifdef USE_RMLUI
-extern cvar_t ui_use_rmlui_menus;
-extern int	  UI_IsMainMenuStartupPending (void);
+extern int UI_IsMainMenuStartupPending (void);
 #endif
 
 int r_visframecount; // bumped when going to a new PVS
@@ -480,7 +479,7 @@ void R_DrawEntitiesOnList (cb_context_t *cbx, int alphapass, int chain, qboolean
 
 	R_BeginDebugUtilsLabel (cbx, alphapass ? "Entities Alpha Pass" : "Entities");
 #ifdef USE_RMLUI
-	const qboolean suppress_viewmodel = ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ();
+	const qboolean suppress_viewmodel = UI_IsMainMenuStartupPending ();
 #endif
 	// johnfitz -- sprites are not a special case
 	while (true)
@@ -556,7 +555,7 @@ void R_DrawViewModel (cb_context_t *cbx)
 
 #ifdef USE_RMLUI
 	// Avoid a startup "weapon flash" while the deferred main menu is waiting to open.
-	if (ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ())
+	if (UI_IsMainMenuStartupPending ())
 		return;
 #endif
 
@@ -819,7 +818,7 @@ void R_ShowTris (cb_context_t *cbx)
 			currententity->model->type == mod_alias && scr_viewsize.value < 130)
 		{
 #ifdef USE_RMLUI
-			if (!(ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ()))
+			if (!UI_IsMainMenuStartupPending ())
 #endif
 				R_DrawAliasModel_ShowTris (cbx, currententity);
 		}

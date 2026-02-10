@@ -69,7 +69,6 @@ static int hudtype;
 extern cvar_t scr_style;
 
 #ifdef USE_RMLUI
-extern cvar_t ui_use_rmlui_hud;
 #include "ui_manager.h"
 static qboolean rmlui_hud_shown = false;
 #endif
@@ -106,8 +105,7 @@ void Sbar_ShowScores (void)
 		return;
 	sb_showscores = true;
 #ifdef USE_RMLUI
-	if (ui_use_rmlui_hud.value)
-		UI_ShowScoreboard ();
+	UI_ShowScoreboard ();
 #endif
 }
 
@@ -123,8 +121,7 @@ void Sbar_DontShowScores (void)
 	Sbar_CSQCCommand ();
 	sb_showscores = false;
 #ifdef USE_RMLUI
-	if (ui_use_rmlui_hud.value)
-		UI_HideScoreboard ();
+	UI_HideScoreboard ();
 #endif
 }
 
@@ -1290,12 +1287,12 @@ void Sbar_Draw (cb_context_t *cbx)
 		return; // console is full screen
 
 #ifdef USE_RMLUI
-	// If RmlUI HUD is enabled and we're in-game (world loaded, fully signed on, not a demo), show RmlUI HUD
-	if (ui_use_rmlui_hud.value && cl.worldmodel && cls.signon == SIGNONS && !cls.demoplayback)
+	// If we're in-game (world loaded, fully signed on, not a demo), show RmlUI HUD
+	if (cl.worldmodel && cls.signon == SIGNONS && !cls.demoplayback)
 	{
 		if (!rmlui_hud_shown)
 		{
-			UI_ShowHUD (NULL); // NULL = default hud_classic.rml
+			UI_ShowHUD (NULL);
 			rmlui_hud_shown = true;
 		}
 		// Sync game state to RmlUI data model
@@ -1326,12 +1323,6 @@ void Sbar_Draw (cb_context_t *cbx)
 		}
 
 		return;
-	}
-	else if (rmlui_hud_shown)
-	{
-		// Cvar was toggled off - hide RmlUI HUD
-		UI_HideHUD ();
-		rmlui_hud_shown = false;
 	}
 #endif
 

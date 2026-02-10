@@ -31,8 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef USE_RMLUI
 #include "ui_manager.h"
-extern cvar_t ui_use_rmlui_hud;
-extern cvar_t ui_use_rmlui_menus;
 extern int	  UI_IsMainMenuStartupPending (void);
 extern double UI_StartupBlackoutAlpha (void);
 #endif
@@ -256,8 +254,7 @@ static void SCR_CheckDrawCenterString (cb_context_t *cbx)
 		scr_erase_lines = scr_center_lines;
 
 #ifdef USE_RMLUI
-	if (ui_use_rmlui_hud.value)
-		return; // RmlUI HUD handles centerprint rendering
+	return; // RmlUI HUD handles centerprint rendering
 #endif
 
 	if (scr_centertime_off <= cl.time && !cl.intermission)
@@ -457,7 +454,7 @@ static void SCR_CalcRefdef (void)
 	if ((size >= 120) || cl.intermission || (scr_sbaralpha.value < 1) || ((scr_style.value < 1.0f) && cl.qcvm.extfuncs.CSQC_DrawHud) ||
 		(scr_style.value >= 2.0f) // johnfitz -- scr_sbaralpha.value. Spike -- simple csqc assumes fullscreen video the same way.
 #ifdef USE_RMLUI
-		|| ui_use_rmlui_hud.value // RmlUI HUD renders in its own pass, no need for sbar space
+		|| true // RmlUI HUD renders in its own pass, no need for sbar space
 #endif
 	)
 		sb_lines = 0;
@@ -1003,10 +1000,9 @@ static void SCR_DrawConsole (cb_context_t *cbx)
 	{
 		if (key_dest == key_game || key_dest == key_message)
 		{
-#ifdef USE_RMLUI
-			if (!ui_use_rmlui_hud.value)
+#ifndef USE_RMLUI
+			Con_DrawNotify (cbx); // only draw notify in game
 #endif
-				Con_DrawNotify (cbx); // only draw notify in game
 		}
 	}
 }
@@ -1184,7 +1180,7 @@ static void SCR_DrawGUI (void *unused)
 {
 	cb_context_t *cbx = vulkan_globals.secondary_cb_contexts[SCBX_GUI];
 #ifdef USE_RMLUI
-	const qboolean suppress_native_overlay = ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ();
+	const qboolean suppress_native_overlay = UI_IsMainMenuStartupPending ();
 	const float	   startup_blackout_alpha = suppress_native_overlay ? (float)UI_StartupBlackoutAlpha () : 0.0f;
 #endif
 
@@ -1228,26 +1224,18 @@ static void SCR_DrawGUI (void *unused)
 	else if (cl.intermission == 1 && key_dest == key_game) // end of level
 	{
 #ifdef USE_RMLUI
-		if (!ui_use_rmlui_hud.value)
-#endif
-			Sbar_IntermissionOverlay (cbx);
-#ifdef USE_RMLUI
-		if (ui_use_rmlui_hud.value)
-			UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
+		UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
+#else
+		Sbar_IntermissionOverlay (cbx);
 #endif
 	}
 	else if (cl.intermission == 2 && key_dest == key_game) // end of episode
 	{
 #ifdef USE_RMLUI
-		if (!ui_use_rmlui_hud.value)
-		{
-#endif
-			Sbar_FinaleOverlay (cbx);
-			SCR_CheckDrawCenterString (cbx);
-#ifdef USE_RMLUI
-		}
-		if (ui_use_rmlui_hud.value)
-			UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
+		UI_SyncGameState (cl.stats, MAX_CL_STATS, cl.items, cl.intermission, cl.gametype, cl.maxclients, cl.levelname, cl.mapname, cl.time);
+#else
+		Sbar_FinaleOverlay (cbx);
+		SCR_CheckDrawCenterString (cbx);
 #endif
 	}
 	else
@@ -1360,7 +1348,7 @@ void SCR_UpdateScreen (qboolean use_tasks)
 	// tasks are created. This prevents race conditions between UI state changes
 	// and rendering on worker threads.
 	UI_ProcessPending ();
-	suppress_startup_world = ui_use_rmlui_menus.value && UI_IsMainMenuStartupPending ();
+	suppress_startup_world = UI_IsMainMenuStartupPending ();
 	if (suppress_startup_world)
 		use_tasks = false; /* Keep startup blackout path simple and deterministic. */
 #endif

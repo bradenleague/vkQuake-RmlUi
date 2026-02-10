@@ -26,7 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef USE_RMLUI
 #include "ui_manager.h"
-extern cvar_t ui_use_rmlui_menus;
 #endif
 
 /* key up events are sent even if in console mode */
@@ -1056,20 +1055,14 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 		case key_game:
 		case key_console:
 #ifdef USE_RMLUI
-			/* If RmlUI menus are enabled, use them instead of Quake menus */
-			if (ui_use_rmlui_menus.value)
-			{
-				/* Show pause menu if in-game, main menu otherwise */
-				if (sv.active)
-					UI_PushMenu ("ui/rml/menus/pause_menu.rml");
-				else
-					UI_PushMenu ("ui/rml/menus/main_menu.rml");
-			}
+			/* Show pause menu if in-game, main menu otherwise */
+			if (sv.active)
+				UI_PushMenu ("ui/rml/menus/pause_menu.rml");
 			else
+				UI_PushMenu ("ui/rml/menus/main_menu.rml");
+#else
+			M_ToggleMenu_f ();
 #endif
-			{
-				M_ToggleMenu_f ();
-			}
 			break;
 		default:
 			Sys_Error ("Bad key_dest");

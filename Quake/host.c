@@ -33,12 +33,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef USE_RMLUI
 #include "ui_manager.h"
 
-/* Cvars to enable RmlUI components */
-cvar_t ui_use_rmlui = {"ui_use_rmlui", "1", CVAR_ARCHIVE};			   /* Master switch */
-cvar_t ui_use_rmlui_hud = {"ui_use_rmlui_hud", "0", CVAR_ARCHIVE};	   /* Use RmlUI HUD */
-cvar_t ui_use_rmlui_menus = {"ui_use_rmlui_menus", "1", CVAR_ARCHIVE}; /* Use RmlUI menus */
-
-static qboolean ui_syncing_cvars = false;
+/* Read-only indicator that RmlUI is compiled in */
+cvar_t ui_use_rmlui = {"ui_use_rmlui", "1", CVAR_ARCHIVE};
 
 #define UI_STARTUP_SETTLE_SECS 0.8 /* total time startup suppression is active */
 #define UI_STARTUP_FADE_SECS   0.3 /* tail fade-out duration within settle window */
@@ -66,26 +62,6 @@ static void UI_ShowWhenReady_f (void);
 static void UI_TickStartup (void);
 int			UI_IsMainMenuStartupPending (void);
 double		UI_StartupBlackoutAlpha (void);
-
-static void UI_MasterCvarChanged (cvar_t *var)
-{
-	if (ui_syncing_cvars)
-		return;
-	ui_syncing_cvars = true;
-	Cvar_SetValue ("ui_use_rmlui_menus", var->value ? 1 : 0);
-	Cvar_SetValue ("ui_use_rmlui_hud", var->value ? 1 : 0);
-	ui_syncing_cvars = false;
-}
-
-static void UI_ComponentCvarChanged (cvar_t *var)
-{
-	(void)var;
-	if (ui_syncing_cvars)
-		return;
-	ui_syncing_cvars = true;
-	Cvar_SetValue ("ui_use_rmlui", (ui_use_rmlui_menus.value || ui_use_rmlui_hud.value) ? 1 : 0);
-	ui_syncing_cvars = false;
-}
 
 /* Console commands for RmlUI */
 static void UI_Toggle_f (void)
@@ -206,12 +182,6 @@ static void UI_TickStartup (void)
 		return;
 
 	case STARTUP_SETTLING:
-		if (!ui_use_rmlui_menus.value)
-		{
-			ui_startup.phase = STARTUP_IDLE;
-			ui_startup.pending_since = 0.0;
-			return;
-		}
 		if (UI_IsMainMenuShowReady ())
 		{
 			UI_OpenMainMenuNow ();
@@ -232,11 +202,6 @@ static void UI_TickStartup (void)
 		return;
 
 	case STARTUP_AUTO_DETECT:
-		if (!ui_use_rmlui_menus.value)
-		{
-			ui_startup.phase = STARTUP_IDLE;
-			return;
-		}
 		if (realtime < ui_startup.auto_detect_after)
 			return; /* let startup / game-change commands settle */
 
@@ -1378,11 +1343,6 @@ void Host_Init (void)
 		UI_Init (1280, 720, com_basedir); /* Initial size, will resize after VID_Init */
 		/* Register cvars and console commands for RmlUI */
 		Cvar_RegisterVariable (&ui_use_rmlui);
-		Cvar_RegisterVariable (&ui_use_rmlui_hud);
-		Cvar_RegisterVariable (&ui_use_rmlui_menus);
-		Cvar_SetCallback (&ui_use_rmlui, UI_MasterCvarChanged);
-		Cvar_SetCallback (&ui_use_rmlui_hud, UI_ComponentCvarChanged);
-		Cvar_SetCallback (&ui_use_rmlui_menus, UI_ComponentCvarChanged);
 		Cmd_AddCommand ("ui_toggle", UI_Toggle_f);
 		Cmd_AddCommand ("ui_show", UI_Show_f);
 		Cmd_AddCommand ("ui_show_when_ready", UI_ShowWhenReady_f);

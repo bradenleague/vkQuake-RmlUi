@@ -176,14 +176,10 @@ void CL_Disconnect (void)
 #ifdef USE_RMLUI
 	// Clean up RmlUI HUD overlays on disconnect
 	{
-		extern cvar_t ui_use_rmlui_hud;
-		extern void	  Sbar_UI_Reset (void);
-		if (ui_use_rmlui_hud.value)
-		{
-			UI_HideHUD ();
-			UI_HideScoreboard ();
-			UI_HideIntermission ();
-		}
+		extern void Sbar_UI_Reset (void);
+		UI_HideHUD ();
+		UI_HideScoreboard ();
+		UI_HideIntermission ();
 		Sbar_UI_Reset ();
 	}
 #endif

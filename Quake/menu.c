@@ -25,7 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef USE_RMLUI
 #include "ui_manager.h"
-extern cvar_t ui_use_rmlui_menus;
 #endif
 
 void (*vid_menucmdfn) (void); // johnfitz
@@ -646,15 +645,12 @@ void M_Mouse_UpdateCursor (int *cursor, int left, int right, int top, int item_h
 void M_Menu_Main_f (void)
 {
 #ifdef USE_RMLUI
-	// If RmlUI menus are enabled, delegate to RmlUI
-	// Note: Unlike native menus, we don't set cls.demonum = -1 here.
+	// Delegate to RmlUI main menu.
+	// Unlike native menus, we don't set cls.demonum = -1 here.
 	// This allows demos to continue cycling in the background while
-	// the menu is displayed. The demo loop will keep running.
-	if (ui_use_rmlui_menus.value)
-	{
-		UI_PushMenu ("ui/rml/menus/main_menu.rml");
-		return;
-	}
+	// the menu is displayed.
+	UI_PushMenu ("ui/rml/menus/main_menu.rml");
+	return;
 #endif
 
 	M_MenuChanged ();
@@ -2250,30 +2246,20 @@ enum
 	OPT_VIDEO,
 	OPT_GRAPHICS,
 	OPT_SOUND,
-#ifdef USE_RMLUI
-	OPT_UI,
-#endif
 	OPT_PADDING,
 	OPT_DEFAULTS,
 	OPTIONS_ITEMS
 };
 
-#ifdef USE_RMLUI
-#define OPTIONS_LAST_SELECTABLE OPT_UI
-#else
 #define OPTIONS_LAST_SELECTABLE OPT_SOUND
-#endif
 
 static int options_cursor;
 
 void M_Menu_Options_f (void)
 {
 #ifdef USE_RMLUI
-	if (ui_use_rmlui_menus.value)
-	{
-		UI_PushMenu ("ui/rml/menus/options.rml");
-		return;
-	}
+	UI_PushMenu ("ui/rml/menus/options.rml");
+	return;
 #endif
 
 	M_MenuChanged ();
@@ -2297,10 +2283,6 @@ static void M_Options_Draw (cb_context_t *cbx)
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_VIDEO, "Video");
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_GRAPHICS, "Graphics");
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_SOUND, "Sound");
-#ifdef USE_RMLUI
-	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_UI, "Modern UI");
-	M_DrawCheckbox (cbx, MENU_VALUE_X, top + CHARACTER_SIZE * OPT_UI, ui_use_rmlui_menus.value);
-#endif
 	M_Print (cbx, MENU_LABEL_X, top + CHARACTER_SIZE * OPT_DEFAULTS, "Reset config");
 
 	// cursor
@@ -2334,16 +2316,6 @@ void M_Options_Key (int k)
 		case OPT_CONTROLS:
 			M_Menu_Keys_f ();
 			break;
-#ifdef USE_RMLUI
-		case OPT_UI:
-			Cvar_SetValue ("ui_use_rmlui_menus", ui_use_rmlui_menus.value ? 0 : 1);
-			if (ui_use_rmlui_menus.value)
-			{
-				M_Menu_Main_f ();
-				return;
-			}
-			break;
-#endif
 		case OPT_DEFAULTS:
 			if (SCR_ModalMessage (
 					"This will reset all controls\n"

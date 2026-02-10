@@ -25,7 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef USE_RMLUI
 #include "ui_manager.h"
-extern cvar_t ui_use_rmlui_hud;
 #endif
 
 #include <sys/types.h>
@@ -519,7 +518,7 @@ void Con_Printf (const char *fmt, ...)
 
 #ifdef USE_RMLUI
 	// Forward to RmlUI notify area when in-game
-	if (ui_use_rmlui_hud.value && cls.signon == SIGNONS)
+	if (cls.signon == SIGNONS)
 		UI_NotifyPrint (msg);
 #endif
 
@@ -1119,39 +1118,36 @@ void Con_DrawNotify (cb_context_t *cbx)
 		v += 8;
 	}
 
+#ifndef USE_RMLUI
 	if (key_dest == key_message)
 	{
-#ifdef USE_RMLUI
-		if (!ui_use_rmlui_hud.value)
-#endif
+		if (chat_team)
 		{
-			if (chat_team)
-			{
-				Draw_String (cbx, 8, v, "say_team:");
-				x = 11;
-			}
-			else
-			{
-				Draw_String (cbx, 8, v, "say:");
-				x = 6;
-			}
-
-			text = Key_GetChatBuffer ();
-			i = Key_GetChatMsgLen ();
-			if (i > con_linewidth - x - 1)
-				text += i - con_linewidth + x + 1;
-
-			while (*text)
-			{
-				Draw_Character (cbx, x << 3, v, *text);
-				x++;
-				text++;
-			}
-
-			Draw_Character (cbx, x << 3, v, 10 + ((int)(realtime * con_cursorspeed) & 1));
-			v += 8;
+			Draw_String (cbx, 8, v, "say_team:");
+			x = 11;
 		}
+		else
+		{
+			Draw_String (cbx, 8, v, "say:");
+			x = 6;
+		}
+
+		text = Key_GetChatBuffer ();
+		i = Key_GetChatMsgLen ();
+		if (i > con_linewidth - x - 1)
+			text += i - con_linewidth + x + 1;
+
+		while (*text)
+		{
+			Draw_Character (cbx, x << 3, v, *text);
+			x++;
+			text++;
+		}
+
+		Draw_Character (cbx, x << 3, v, 10 + ((int)(realtime * con_cursorspeed) & 1));
+		v += 8;
 	}
+#endif
 }
 
 /*
