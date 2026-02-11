@@ -8,7 +8,6 @@ RUN apt-get update \
  && apt-get update \
  && apt-get install -y \
 	build-essential \
-	cmake \
 	file \
 	fuse \
 	unzip \
@@ -54,6 +53,15 @@ RUN cd /tmp \
  && unzip ninja-linux.zip \
  && rm ninja-linux.zip \
  && cp ninja /usr/bin/ninja
+
+# CMake >= 3.18 required for ALIAS of imported targets (RmlUI Lua bindings)
+RUN cd /tmp \
+ && wget https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz \
+ && tar -xzf cmake-3.28.3-linux-x86_64.tar.gz \
+ && rm cmake-3.28.3-linux-x86_64.tar.gz \
+ && cp -r cmake-3.28.3-linux-x86_64/bin/* /usr/bin/ \
+ && cp -r cmake-3.28.3-linux-x86_64/share/* /usr/share/ \
+ && rm -rf cmake-3.28.3-linux-x86_64
 
 RUN cd /opt \
  && wget https://github.com/mesonbuild/meson/releases/download/1.3.1/meson-1.3.1.tar.gz \
