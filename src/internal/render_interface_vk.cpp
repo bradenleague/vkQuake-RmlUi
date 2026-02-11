@@ -97,6 +97,8 @@ bool RenderInterface_VK::Initialize (const VulkanConfig &config)
 		if (vkCreateFence (m_config.device, &fence_ci, nullptr, &m_upload_fence) != VK_SUCCESS)
 		{
 			Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create batch upload fence");
+			vkDestroyCommandPool (m_config.device, m_upload_cmd_pool, nullptr);
+			m_upload_cmd_pool = VK_NULL_HANDLE;
 			return false;
 		}
 		m_upload_fence_pending = false;
@@ -663,8 +665,68 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 
 	vkBindImageMemory (m_config.device, texture->image, texture->memory_alloc.memory, texture->memory_alloc.offset);
 
+	// Create image view and descriptor set BEFORE staging the upload.
+	// Both are host-side operations that don't depend on the GPU transfer.
+	// This ensures that if either fails, no staged/pending upload entry
+	// references the texture — avoiding use-after-free in FlushPendingUploads().
+	VkImageViewCreateInfo view_info{};
+	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.image = texture->image;
+	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+	view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	view_info.subresourceRange.baseMipLevel = 0;
+	view_info.subresourceRange.levelCount = 1;
+	view_info.subresourceRange.baseArrayLayer = 0;
+	view_info.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView (m_config.device, &view_info, nullptr, &texture->view) != VK_SUCCESS)
+	{
+		m_image_pool.Free (texture->memory_alloc);
+		vkDestroyImage (m_config.device, texture->image, nullptr);
+		DestroyBuffer (staging_buffer, staging_memory);
+		delete texture;
+		return 0;
+	}
+
+	texture->sampler = m_sampler;
+
+	VkDescriptorSetAllocateInfo desc_alloc_info{};
+	desc_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	desc_alloc_info.descriptorPool = m_descriptor_pool;
+	desc_alloc_info.descriptorSetCount = 1;
+	desc_alloc_info.pSetLayouts = &m_texture_set_layout;
+
+	if (vkAllocateDescriptorSets (m_config.device, &desc_alloc_info, &texture->descriptor_set) != VK_SUCCESS)
+	{
+		vkDestroyImageView (m_config.device, texture->view, nullptr);
+		m_image_pool.Free (texture->memory_alloc);
+		vkDestroyImage (m_config.device, texture->image, nullptr);
+		DestroyBuffer (staging_buffer, staging_memory);
+		delete texture;
+		return 0;
+	}
+
+	VkDescriptorImageInfo image_desc_info{};
+	image_desc_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	image_desc_info.imageView = texture->view;
+	image_desc_info.sampler = texture->sampler;
+
+	VkWriteDescriptorSet write{};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.dstSet = texture->descriptor_set;
+	write.dstBinding = 0;
+	write.dstArrayElement = 0;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.descriptorCount = 1;
+	write.pImageInfo = &image_desc_info;
+
+	vkUpdateDescriptorSets (m_config.device, 1, &write, 0, nullptr);
+
 	// Batched path: if inside a frame (BeginFrame was called), defer the upload.
 	// Immediate path: if outside a frame (e.g. during Initialize()), submit now.
+	// Image view and descriptor set are already created, so upload failures
+	// only lose pixel data — the texture object remains valid for cleanup.
 	const bool inside_frame = (m_current_cmd != VK_NULL_HANDLE);
 
 	if (inside_frame)
@@ -719,8 +781,8 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 		if (vkCreateFence (m_config.device, &fence_ci, nullptr, &upload_fence) != VK_SUCCESS)
 		{
 			vkDestroyCommandPool (m_config.device, cmd_pool, nullptr);
+			DestroyTexture (texture);
 			m_image_pool.Free (texture->memory_alloc);
-			vkDestroyImage (m_config.device, texture->image, nullptr);
 			DestroyBuffer (staging_buffer, staging_memory);
 			delete texture;
 			return 0;
@@ -735,8 +797,8 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 		{
 			vkDestroyFence (m_config.device, upload_fence, nullptr);
 			vkDestroyCommandPool (m_config.device, cmd_pool, nullptr);
+			DestroyTexture (texture);
 			m_image_pool.Free (texture->memory_alloc);
-			vkDestroyImage (m_config.device, texture->image, nullptr);
 			DestroyBuffer (staging_buffer, staging_memory);
 			delete texture;
 			return 0;
@@ -744,61 +806,6 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 
 		m_pending_uploads.push_back ({upload_fence, cmd_pool, staging_buffer, staging_memory});
 	}
-
-	// Create image view (host-side operation, safe immediately)
-	VkImageViewCreateInfo view_info{};
-	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	view_info.image = texture->image;
-	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
-	view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	view_info.subresourceRange.baseMipLevel = 0;
-	view_info.subresourceRange.levelCount = 1;
-	view_info.subresourceRange.baseArrayLayer = 0;
-	view_info.subresourceRange.layerCount = 1;
-
-	if (vkCreateImageView (m_config.device, &view_info, nullptr, &texture->view) != VK_SUCCESS)
-	{
-		m_image_pool.Free (texture->memory_alloc);
-		vkDestroyImage (m_config.device, texture->image, nullptr);
-		delete texture;
-		return 0;
-	}
-
-	texture->sampler = m_sampler;
-
-	// Allocate descriptor set for this texture
-	VkDescriptorSetAllocateInfo desc_alloc_info{};
-	desc_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	desc_alloc_info.descriptorPool = m_descriptor_pool;
-	desc_alloc_info.descriptorSetCount = 1;
-	desc_alloc_info.pSetLayouts = &m_texture_set_layout;
-
-	if (vkAllocateDescriptorSets (m_config.device, &desc_alloc_info, &texture->descriptor_set) != VK_SUCCESS)
-	{
-		vkDestroyImageView (m_config.device, texture->view, nullptr);
-		m_image_pool.Free (texture->memory_alloc);
-		vkDestroyImage (m_config.device, texture->image, nullptr);
-		delete texture;
-		return 0;
-	}
-
-	// Update descriptor set
-	VkDescriptorImageInfo image_desc_info{};
-	image_desc_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	image_desc_info.imageView = texture->view;
-	image_desc_info.sampler = texture->sampler;
-
-	VkWriteDescriptorSet write{};
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.dstSet = texture->descriptor_set;
-	write.dstBinding = 0;
-	write.dstArrayElement = 0;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	write.descriptorCount = 1;
-	write.pImageInfo = &image_desc_info;
-
-	vkUpdateDescriptorSets (m_config.device, 1, &write, 0, nullptr);
 
 	Rml::TextureHandle handle = m_next_texture_handle++;
 	m_textures[handle] = texture;
@@ -877,46 +884,75 @@ void RenderInterface_VK::FlushPendingUploads ()
 	alloc_info.commandBufferCount = 1;
 
 	VkCommandBuffer cmd;
-	vkAllocateCommandBuffers (m_config.device, &alloc_info, &cmd);
-
-	VkCommandBufferBeginInfo begin_info{};
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer (cmd, &begin_info);
-
-	for (auto &staged : m_staged_uploads)
+	if (vkAllocateCommandBuffers (m_config.device, &alloc_info, &cmd) != VK_SUCCESS)
 	{
-		// Barrier: UNDEFINED → TRANSFER_DST_OPTIMAL
-		ImageBarrier (
-			cmd, staged.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-		VkBufferImageCopy region{};
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.layerCount = 1;
-		region.imageExtent = {static_cast<uint32_t> (staged.dimensions.x), static_cast<uint32_t> (staged.dimensions.y), 1};
-		vkCmdCopyBufferToImage (cmd, staged.staging_buffer, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		// Barrier: TRANSFER_DST_OPTIMAL → SHADER_READ_ONLY_OPTIMAL
-		ImageBarrier (
-			cmd, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkAllocateCommandBuffers failed");
+		goto flush_fail;
 	}
 
-	vkEndCommandBuffer (cmd);
+	{
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		if (vkBeginCommandBuffer (cmd, &begin_info) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkBeginCommandBuffer failed");
+			goto flush_fail;
+		}
 
-	VkSubmitInfo submit_info{};
-	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &cmd;
+		for (auto &staged : m_staged_uploads)
+		{
+			// Barrier: UNDEFINED → TRANSFER_DST_OPTIMAL
+			ImageBarrier (
+				cmd, staged.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	vkQueueSubmit (m_config.graphics_queue, 1, &submit_info, m_upload_fence);
+			VkBufferImageCopy region{};
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.layerCount = 1;
+			region.imageExtent = {static_cast<uint32_t> (staged.dimensions.x), static_cast<uint32_t> (staged.dimensions.y), 1};
+			vkCmdCopyBufferToImage (cmd, staged.staging_buffer, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+			// Barrier: TRANSFER_DST_OPTIMAL → SHADER_READ_ONLY_OPTIMAL
+			ImageBarrier (
+				cmd, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		}
+
+		if (vkEndCommandBuffer (cmd) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkEndCommandBuffer failed");
+			goto flush_fail;
+		}
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &cmd;
+
+		if (vkQueueSubmit (m_config.graphics_queue, 1, &submit_info, m_upload_fence) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkQueueSubmit failed");
+			goto flush_fail;
+		}
+	}
 
 	// Move staging buffers to prev-batch for deferred cleanup
 	for (auto &staged : m_staged_uploads)
 		m_prev_batch_staging.emplace_back (staged.staging_buffer, staged.staging_memory);
 	m_staged_uploads.clear ();
 	m_upload_fence_pending = true;
+	return;
+
+flush_fail:
+	// On failure the fence was never signaled, so free staging buffers directly
+	// and do NOT set m_upload_fence_pending (would deadlock next frame).
+	// The images themselves are valid — they have memory, views, and descriptors
+	// (thanks to GenerateTexture reorder) but will lack pixel data until
+	// RmlUI regenerates them.
+	for (auto &staged : m_staged_uploads)
+		DestroyBuffer (staged.staging_buffer, staged.staging_memory);
+	m_staged_uploads.clear ();
 }
 
 void RenderInterface_VK::FreePrevBatchStaging ()
