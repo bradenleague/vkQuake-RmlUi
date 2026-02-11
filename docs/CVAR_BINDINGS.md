@@ -95,7 +95,7 @@ Registered via `RegisterEnum(engine_name, ui_name, values, labels)`. Cycled with
 | `r_enhancedmodels` | `enhanced_models` | 1 | 0=Off, 1=On | `options_graphics.rml` | |
 | `snd_mixspeed` | `sound_quality` | 44100 | 11025/22050/44100/48000 | `options_sound.rml` | `CVAR_NONE` |
 | `ambient_level` | `ambient` | 0.3 | 0=Off, 1=On | `options_sound.rml` | |
-| `crosshair` | `crosshair` | 1 | 0=Off, 1=Cross, 2=Dot | `options_game.rml` | |
+| `crosshair` | `crosshair` | 1 | 0=Off, 1=Cross, 2=Dot, 3=Circle, 4=Chevron | `options_game.rml` | |
 | `scr_showfps` | `show_fps` | 0 | 0=Off, 1=On | `options_game.rml` | |
 | `sv_aim` | `sv_aim` | 1 | 0=Off, 1=On | `options_game.rml` | `CVAR_NONE` |
 | `v_gunkick` | `gun_kick` | 1 | 0=Off, 1=Classic, 2=Smooth | `options_game.rml` | |
@@ -117,6 +117,7 @@ These cvars are read via raw `Cvar_VariableValue()` calls in C++ code, not throu
 | `scr_uiscale` | `ui_manager.cpp` — `UpdateDpRatio()` | UI dp_ratio scaling; defaults to 1.0 if <0.5 |
 | `con_notifytime` | `notification_model.cpp` | Notify line expiry duration; defaults to 3.0 if <=0 |
 | `scr_centertime` | `notification_model.cpp` | Centerprint display duration; defaults to 2.0 if <=0 |
+| `scr_printspeed` | `notification_model.cpp` | Centerprint character reveal speed (chars/sec); defaults to 8 if <=0 |
 
 ## Non-Archived Cvars
 

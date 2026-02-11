@@ -82,7 +82,7 @@ This allows nested menus (e.g., Main Menu → Options → Video Settings) where 
 
 ### Configuration
 
-RmlUI menus and HUD are always active when compiled with `USE_RMLUI` (the default). The `ui_use_rmlui` cvar is a read-only indicator; there are no runtime toggles.
+RmlUI menus and HUD are always active when compiled with `USE_RMLUI` (the default). The `ui_use_rmlui` cvar can be toggled at runtime (archived, with a `UI_UseRmluiChanged_f` callback registered in `host.c`).
 
 ## Input Flow
 

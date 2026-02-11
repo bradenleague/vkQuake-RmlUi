@@ -12,7 +12,6 @@ rcss/        base.rcss, hud.rcss (core + default HUD), centerprint.rcss,
              notify.rcss, chat.rcss, scoreboard.rcss, intermission.rcss,
              menu.rcss, main_menu.rcss, widgets.rcss
 fonts/       Lato, OpenSans, SpaceGrotesk
-img/sbar/    HUD icons and images
 ```
 
 ## Hot Reload
@@ -54,9 +53,9 @@ See `docs/DATA_CONTRACT.md` for the complete binding reference.
 
 ```html
 <button data-action="navigate('options')">Options</button>
-<button data-action="console('map e1m1')">Start</button>
+<button data-action="command('map e1m1')">Start</button>
 <button data-action="close()">Back</button>
 <button data-action="quit()">Quit</button>
 ```
 
-Supported actions: `navigate()`, `command()`/`console()`, `close()`, `quit()`, `new_game()`.
+Supported actions: `navigate()`, `command()`, `cvar_changed()`, `cycle_cvar()`, `close()`, `close_all()`, `quit()`, `new_game()`, `load_game()`, `save_game()`, `bind_key()`, `main_menu()`, `connect_to()`, `host_game()`, `load_mod()`.
