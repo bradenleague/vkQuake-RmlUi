@@ -184,7 +184,7 @@ void CvarBindingManager::RegisterAllBindings ()
 	// Game / Controls
 	RegisterFloat ("sensitivity", "sensitivity", 1.0f, 20.0f, 0.5f);
 	RegisterFloat ("scr_sbaralpha", "hud_opacity", 0.0f, 1.0f, 0.05f);
-	RegisterFloat ("scr_uiscale", "ui_scale", 0.5f, 3.0f, 0.25f);
+	RegisterFloat ("scr_uiscale", "ui_scale", 0.5f, 1.5f, 0.25f);
 	RegisterFloat ("scr_fontscale", "font_scale", 0.75f, 2.0f, 0.05f);
 	RegisterFloat ("cl_bob", "view_bob", 0.0f, 0.05f, 0.005f);
 	RegisterFloat ("cl_rollangle", "view_roll", 0.0f, 5.0f, 0.5f);
@@ -405,6 +405,29 @@ void CvarBindingManager::RegisterAllBindings ()
 						variant = Rml::String ("Unknown");
 						break;
 					}
+				});
+		}
+	}
+
+	// ── cvar_changed event callback for data-event-change ──
+	// Registered as a data model event so it fires AFTER DataControllerValue
+	// has synced the element's new value into the backing store.  Using an
+	// inline onchange handler instead would fire BEFORE the sync, causing
+	// SyncFromUI to read the stale previous value.
+	{
+		Rml::DataModelConstructor constructor = s_context->GetDataModel ("cvars");
+		if (constructor)
+		{
+			constructor.BindEventCallback (
+				"cvar_changed",
+				[] (Rml::DataModelHandle, Rml::Event &, const Rml::VariantList &arguments)
+				{
+					if (arguments.empty ())
+						return;
+					Rml::String ui_name = arguments[0].Get<Rml::String> ();
+					if (ui_name.empty () || ShouldIgnoreUIChange ())
+						return;
+					SyncFromUI (std::string (ui_name.c_str ()));
 				});
 		}
 	}

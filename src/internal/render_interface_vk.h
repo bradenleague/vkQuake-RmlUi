@@ -37,6 +37,16 @@ struct VulkanConfig
 	// Memory properties for allocation
 	VkPhysicalDeviceMemoryProperties memory_properties;
 
+	// Timestamp support (L4)
+	uint32_t timestamp_valid_bits;
+
+	// VK_KHR_synchronization2 (H1)
+	int							 sync2_available;
+	PFN_vkCmdPipelineBarrier2KHR cmd_pipeline_barrier_2;
+
+	// VK_KHR_dynamic_rendering (H2)
+	int dynamic_rendering;
+
 	// Function pointers from vkQuake's dispatch table
 	PFN_vkCmdBindPipeline		cmd_bind_pipeline;
 	PFN_vkCmdBindDescriptorSets cmd_bind_descriptor_sets;
@@ -83,6 +93,11 @@ class RenderInterface_VK : public Rml::RenderInterface
 	// Garbage collection - call after GPU fence wait to safely destroy resources
 	void CollectGarbage ();
 
+	// GPU timestamp instrumentation (L4) — called from engine around UI render pass
+	void   WriteBeginTimestamp (VkCommandBuffer primary_cb);
+	void   WriteEndTimestamp (VkCommandBuffer primary_cb);
+	double GetLastFrameGpuTimeMs () const;
+
 	// Set the active command buffer (from vkQuake's cb_context_t)
 	void SetCommandBuffer (VkCommandBuffer cmd);
 
@@ -121,13 +136,22 @@ class RenderInterface_VK : public Rml::RenderInterface
 		Rml::Vector2i		  dimensions;
 	};
 
-	// Pending async texture upload — fence tracks GPU completion
+	// Pending async texture upload — fence tracks GPU completion (legacy immediate path)
 	struct PendingUpload
 	{
 		VkFence		   fence;
 		VkCommandPool  cmd_pool;
 		VkBuffer	   staging_buffer;
 		VkDeviceMemory staging_memory;
+	};
+
+	// Staged upload — accumulated during GenerateTexture(), flushed in EndFrame()
+	struct StagedUpload
+	{
+		VkImage		   image;
+		VkBuffer	   staging_buffer;
+		VkDeviceMemory staging_memory;
+		Rml::Vector2i  dimensions;
 	};
 
 	// Push constant data for vertex shader
@@ -144,6 +168,15 @@ class RenderInterface_VK : public Rml::RenderInterface
 	bool CreateDescriptorSetLayout ();
 	bool CreateSampler ();
 	void DestroyPipelines ();
+
+	// Batch upload helpers
+	void FlushPendingUploads ();
+	void FreePrevBatchStaging ();
+
+	// Sync2-aware barrier helper (H1)
+	void ImageBarrier (
+		VkCommandBuffer cmd, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, VkAccessFlags src_access, VkAccessFlags dst_access,
+		VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage);
 
 	VkBuffer CreateBuffer (VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceMemory &memory);
 	uint32_t FindMemoryType (uint32_t type_filter, VkMemoryPropertyFlags properties);
@@ -167,7 +200,6 @@ class RenderInterface_VK : public Rml::RenderInterface
 
 	// Vulkan resources
 	VkPipeline			  m_pipeline_textured;
-	VkPipeline			  m_pipeline_untextured;
 	VkPipelineLayout	  m_pipeline_layout;
 	VkDescriptorPool	  m_descriptor_pool;
 	VkDescriptorSetLayout m_texture_set_layout;
@@ -188,13 +220,31 @@ class RenderInterface_VK : public Rml::RenderInterface
 	BufferPool		m_buffer_pool;
 	ImageMemoryPool m_image_pool;
 
-	// Async texture uploads pending GPU completion
+	// Async texture uploads pending GPU completion (legacy immediate path)
 	std::vector<PendingUpload> m_pending_uploads;
 
-	// Garbage collection for deferred resource destruction
-	// Uses double-buffering: resources queued in slot N are destroyed when slot N is processed
-	// (which happens after the GPU fence for that frame has been waited on)
-	static constexpr int		GARBAGE_SLOTS = 2;
+	// Batch upload state — accumulates during GenerateTexture(), flushed in EndFrame()
+	std::vector<StagedUpload>						 m_staged_uploads;
+	VkCommandPool									 m_upload_cmd_pool;
+	VkFence											 m_upload_fence;
+	bool											 m_upload_fence_pending;
+	std::vector<std::pair<VkBuffer, VkDeviceMemory>> m_prev_batch_staging;
+
+	// GPU timestamp instrumentation (L4)
+	VkQueryPool m_timestamp_query_pool;
+	bool		m_timestamps_supported;
+	float		m_timestamp_period;
+	uint32_t	m_timestamp_valid_bits;
+	double		m_last_gpu_time_ms;
+	int			m_timestamp_frame_index;
+
+	// Garbage collection for deferred resource destruction.
+	// Uses double-buffering: resources queued in slot N are destroyed when slot N
+	// is revisited (which happens after the GPU fence for that frame has been waited on).
+	// GARBAGE_SLOTS must be >= the engine's DOUBLE_BUFFERED frame count to ensure
+	// resources survive until the GPU is done with them.
+	static constexpr int GARBAGE_SLOTS = 2;
+	static_assert (GARBAGE_SLOTS >= 2, "Need at least 2 garbage slots for double-buffered frame pipelining");
 	int							m_garbage_index;
 	std::vector<GeometryData *> m_geometry_garbage[GARBAGE_SLOTS];
 	std::vector<TextureData *>	m_texture_garbage[GARBAGE_SLOTS];

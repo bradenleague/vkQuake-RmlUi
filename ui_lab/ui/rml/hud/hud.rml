@@ -3,6 +3,7 @@
     <title>Terminal Visor HUD</title>
     <link type="text/rcss" href="../../rcss/base.rcss"/>
     <link type="text/rcss" href="../../rcss/lab_hud.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_notify.rcss"/>
     <script src="../../lua/reticle_controller.lua"/>
     <script src="../../lua/postprocess_controller.lua"/>
 </head>
@@ -54,6 +55,19 @@
                 </div>
             </div>
 
+            <!-- Notify Lines -->
+            <div class="visor-notify">
+                <span class="sys-label notify-header">SYS::MSG</span>
+                <div class="notify-line" data-if="notify_0_visible" data-class-fading="notify_0_fading">{{ notify_0 }}</div>
+                <div class="notify-line" data-if="notify_1_visible" data-class-fading="notify_1_fading">{{ notify_1 }}</div>
+                <div class="notify-line" data-if="notify_2_visible" data-class-fading="notify_2_fading">{{ notify_2 }}</div>
+                <div class="notify-line" data-if="notify_3_visible" data-class-fading="notify_3_fading">{{ notify_3 }}</div>
+            </div>
+
+        </div>
+
+        <!-- ========== Top-Right: Sigils + Key Indicators ========== -->
+        <div class="visor-keys">
             <!-- Sigil Tracker (appears once any sigil collected) -->
             <div class="visor-sigils" data-if="!deathmatch && (has_sigil1 || has_sigil2 || has_sigil3 || has_sigil4)">
                 <span class="sys-label">SIGIL</span>
@@ -65,14 +79,10 @@
                 </div>
             </div>
 
-        </div>
-
-        <!-- ========== Top-Right: Key Indicators ========== -->
-        <div class="visor-keys">
-            <div class="visor-key" data-class-owned="has_key1">
+            <div class="visor-key" data-if="has_key1">
                 <span class="sys-label">KEY::SILVER</span>
             </div>
-            <div class="visor-key" data-class-owned="has_key2">
+            <div class="visor-key" data-if="has_key2">
                 <span class="sys-label">KEY::GOLD</span>
             </div>
         </div>

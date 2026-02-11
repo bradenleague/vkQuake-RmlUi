@@ -317,84 +317,94 @@ extern "C"
 	// Load fonts - called AFTER Vulkan is initialized.
 	// Uses the QuakeFileInterface which searches com_gamedir → com_basedir → CWD.
 	//
+	static const char *base_fonts[] = {
+		"ui/fonts/LatoLatin-Regular.ttf",	 "ui/fonts/LatoLatin-Bold.ttf",	   "ui/fonts/LatoLatin-Italic.ttf",
+		"ui/fonts/LatoLatin-BoldItalic.ttf", "ui/fonts/SpaceGrotesk-Bold.ttf",
+	};
+
+	// Tracks fonts already registered with RmlUI so we never double-load.
+	// Persists across game-directory changes (RmlUI keeps loaded fonts
+	// until Rml::Shutdown).
+	static std::set<std::string> s_loaded_font_filenames;
+
+	// Scan a directory for .ttf/.otf files and load any not yet registered.
+	static void UI_ScanFontDir (const char *root_dir)
+	{
+		namespace fs = std::filesystem;
+		if (!root_dir || !root_dir[0])
+			return;
+
+		fs::path		font_dir = fs::path (root_dir) / "ui" / "fonts";
+		std::error_code ec;
+		if (!fs::is_directory (font_dir, ec))
+			return;
+
+		for (const auto &entry : fs::directory_iterator (font_dir, ec))
+		{
+			if (!entry.is_regular_file (ec))
+				continue;
+
+			std::string ext = entry.path ().extension ().string ();
+			std::transform (ext.begin (), ext.end (), ext.begin (), ::tolower);
+			if (ext != ".ttf" && ext != ".otf")
+				continue;
+
+			std::string filename = entry.path ().filename ().string ();
+			if (s_loaded_font_filenames.count (filename))
+				continue;
+
+			std::string rel_path = "ui/fonts/" + filename;
+			if (Rml::LoadFontFace (rel_path))
+			{
+				Con_DPrintf ("UI_ScanFontDir: Loaded %s\n", rel_path.c_str ());
+				s_loaded_font_filenames.insert (filename);
+			}
+		}
+	}
+
+	// Scan basedir, gamedir, and basedir-relative game dir for fonts.
+	// Safe to call multiple times — already-loaded fonts are skipped.
+	static void UI_DiscoverFonts ()
+	{
+		UI_ScanFontDir (com_basedir);
+
+		if (com_gamedir[0] && strcmp (com_gamedir, com_basedir) != 0)
+		{
+			UI_ScanFontDir (com_gamedir);
+
+			// When userdirs are enabled, com_gamedir points to the userdir
+			// (e.g. ~/.vkquake/demo2), but mod font files live at
+			// basedir/<game> (e.g. ./demo2/ui/fonts/). Also scan that.
+			namespace fs = std::filesystem;
+			fs::path basedir_game = fs::path (com_basedir) / fs::path (com_gamedir).filename ();
+			if (basedir_game != fs::path (com_gamedir) && basedir_game != fs::path (com_basedir))
+			{
+				UI_ScanFontDir (basedir_game.string ().c_str ());
+			}
+		}
+	}
+
 	// Base fonts are loaded first (required for menus/base HUD), then any
 	// additional .ttf/.otf files found in ui/fonts/ directories are loaded
 	// automatically. This lets mods drop fonts into their own ui/fonts/
 	// without needing C++ changes.
 	static void UI_LoadAssets ()
 	{
-		static const char *base_fonts[] = {
-			"ui/fonts/LatoLatin-Regular.ttf",	 "ui/fonts/LatoLatin-Bold.ttf",	   "ui/fonts/LatoLatin-Italic.ttf",
-			"ui/fonts/LatoLatin-BoldItalic.ttf", "ui/fonts/SpaceGrotesk-Bold.ttf",
-		};
-
 		bool any_loaded = false;
 		for (const char *font : base_fonts)
 		{
+			if (s_loaded_font_filenames.count (std::filesystem::path (font).filename ().string ()))
+				continue;
 			if (Rml::LoadFontFace (font))
 			{
 				Con_DPrintf ("UI_LoadAssets: Loaded %s\n", font);
+				s_loaded_font_filenames.insert (std::filesystem::path (font).filename ().string ());
 				any_loaded = true;
 			}
 		}
 
-		// Discover additional fonts from ui/fonts/ in basedir and gamedir.
-		// Scan basedir first, then gamedir (mod fonts overlay base fonts).
-		// Track loaded filenames to avoid double-loading.
-		{
-			namespace fs = std::filesystem;
-			std::set<std::string> loaded_filenames;
-
-			// Record base font filenames so we don't reload them
-			for (const char *font : base_fonts)
-			{
-				fs::path p (font);
-				loaded_filenames.insert (p.filename ().string ());
-			}
-
-			auto scan_font_dir = [&] (const char *root_dir)
-			{
-				if (!root_dir || !root_dir[0])
-					return;
-
-				fs::path		font_dir = fs::path (root_dir) / "ui" / "fonts";
-				std::error_code ec;
-				if (!fs::is_directory (font_dir, ec))
-					return;
-
-				for (const auto &entry : fs::directory_iterator (font_dir, ec))
-				{
-					if (!entry.is_regular_file (ec))
-						continue;
-
-					std::string ext = entry.path ().extension ().string ();
-					// Case-insensitive extension check
-					std::transform (ext.begin (), ext.end (), ext.begin (), ::tolower);
-					if (ext != ".ttf" && ext != ".otf")
-						continue;
-
-					std::string filename = entry.path ().filename ().string ();
-					if (loaded_filenames.count (filename))
-						continue;
-
-					// Build the relative path that QuakeFileInterface expects
-					std::string rel_path = "ui/fonts/" + filename;
-					if (Rml::LoadFontFace (rel_path))
-					{
-						Con_DPrintf ("UI_LoadAssets: Discovered %s\n", rel_path.c_str ());
-						loaded_filenames.insert (filename);
-						any_loaded = true;
-					}
-				}
-			};
-
-			scan_font_dir (com_basedir);
-			// Only scan gamedir if it differs from basedir (avoids double-scan)
-			if (com_gamedir[0] && strcmp (com_gamedir, com_basedir) != 0)
-			{
-				scan_font_dir (com_gamedir);
-			}
-		}
+		UI_DiscoverFonts ();
+		any_loaded = any_loaded || !s_loaded_font_filenames.empty ();
 
 		if (!any_loaded)
 		{
@@ -447,6 +457,7 @@ extern "C"
 		// Reset all mutable state so a reinit starts clean.
 		g_state = UIManagerState{};
 		s_last_font_scale = -1.0f;
+		s_loaded_font_filenames.clear ();
 		Con_DPrintf ("UI_Shutdown: RmlUI shut down\n");
 	}
 
@@ -1013,6 +1024,10 @@ extern "C"
 		Rml::Factory::ClearTemplateCache ();
 		Rml::ReleaseTextures ();
 
+		// Pick up fonts from the new game directory (e.g. mod-specific fonts).
+		// Already-loaded fonts are skipped, so this is safe to call repeatedly.
+		UI_DiscoverFonts ();
+
 		// Invalidate deferred pointer — documents are about to be replaced.
 		g_state.pending_menu_enter = nullptr;
 		s_last_font_scale = -1.0f;
@@ -1162,6 +1177,21 @@ extern "C"
 		g_state.perf_last.total_ms = g_state.perf_last.begin_ms + g_state.perf_last.update_ms + g_state.perf_last.render_ms + g_state.perf_last.end_ms;
 	}
 
+	// GPU timestamp instrumentation — primary CB, around UI render pass
+	void UI_WriteBeginTimestamp (void *cmd)
+	{
+		if (!IsRmlUiEnabled () || !g_state.render_interface)
+			return;
+		g_state.render_interface->WriteBeginTimestamp (static_cast<VkCommandBuffer> (cmd));
+	}
+
+	void UI_WriteEndTimestamp (void *cmd)
+	{
+		if (!IsRmlUiEnabled () || !g_state.render_interface)
+			return;
+		g_state.render_interface->WriteEndTimestamp (static_cast<VkCommandBuffer> (cmd));
+	}
+
 	// Garbage collection - call after GPU fence wait
 	void UI_CollectGarbage (void)
 	{
@@ -1185,6 +1215,10 @@ extern "C"
 			return;
 		}
 		*out_stats = g_state.perf_last;
+		if (g_state.render_interface)
+		{
+			out_stats->gpu_ms = g_state.render_interface->GetLastFrameGpuTimeMs ();
+		}
 	}
 
 	// Input mode control

@@ -3,6 +3,7 @@
     <title>HUD</title>
     <link type="text/rcss" href="../../rcss/base.rcss"/>
     <link type="text/rcss" href="../../rcss/hud.rcss"/>
+    <link type="text/rcss" href="../../rcss/notify.rcss"/>
 </head>
 <body id="hud" data-model="game" class="hud-overlay hud-default">
 
@@ -95,11 +96,11 @@
 
     <!-- ========== Top-Right: Key Indicators ========== -->
     <div class="key-indicators hud-top-right">
-        <div class="key-indicator silver" data-class-owned="has_key1">
+        <div class="key-indicator silver" data-if="has_key1">
             <span class="key-icon">KEY</span>
             <div class="key-accent"></div>
         </div>
-        <div class="key-indicator gold" data-class-owned="has_key2">
+        <div class="key-indicator gold" data-if="has_key2">
             <span class="key-icon">KEY</span>
             <div class="key-accent"></div>
         </div>
@@ -131,6 +132,13 @@
                 <span class="level-stat-label">SECRETS</span>
                 <span class="level-stat-value">{{ secrets }}/{{ total_secrets }}</span>
             </div>
+        </div>
+
+        <div class="notify-area">
+            <div class="notify-line" data-if="notify_0_visible" data-class-fading="notify_0_fading">{{ notify_0 }}</div>
+            <div class="notify-line" data-if="notify_1_visible" data-class-fading="notify_1_fading">{{ notify_1 }}</div>
+            <div class="notify-line" data-if="notify_2_visible" data-class-fading="notify_2_fading">{{ notify_2 }}</div>
+            <div class="notify-line" data-if="notify_3_visible" data-class-fading="notify_3_fading">{{ notify_3 }}</div>
         </div>
     </div>
 

@@ -21,14 +21,14 @@
                         <span class="lab-option-label">Master Volume</span>
                         <input type="range" class="range" min="0" max="1" step="0.1"
                                data-value="volume"
-                               onchange="cvar_changed('volume')" />
+                               data-event-change="cvar_changed('volume')" />
                     </div>
 
                     <div class="lab-option-row">
                         <span class="lab-option-label">Music Volume</span>
                         <input type="range" class="range" min="0" max="1" step="0.1"
                                data-value="bgmvolume"
-                               onchange="cvar_changed('bgmvolume')" />
+                               data-event-change="cvar_changed('bgmvolume')" />
                     </div>
 
                     <div class="lab-section-header">Audio Settings</div>

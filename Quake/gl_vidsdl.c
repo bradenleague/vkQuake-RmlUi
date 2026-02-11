@@ -150,8 +150,13 @@ static VkFence			command_buffer_fences[DOUBLE_BUFFERED];
 static qboolean			frame_submitted[DOUBLE_BUFFERED];
 static VkFramebuffer	main_framebuffers[NUM_COLOR_BUFFERS];
 static VkSemaphore		image_aquired_semaphores[DOUBLE_BUFFERED];
-static VkSemaphore		draw_complete_semaphores[DOUBLE_BUFFERED];
+// Per-swapchain-image "render finished" semaphores, following Khronos guidance
+// (swapchain_semaphore_reuse.html). Indexed by swapchain image index, not
+// frame-in-flight index, to prevent semaphore reuse hazards when the
+// presentation engine hands back images out of order.
+static VkSemaphore		draw_complete_semaphores[MAX_SWAP_CHAIN_IMAGES];
 static VkFramebuffer	ui_framebuffers[MAX_SWAP_CHAIN_IMAGES];
+static uint32_t			gfx_timestamp_valid_bits;
 static VkFramebuffer	postprocess_framebuffers[MAX_SWAP_CHAIN_IMAGES];
 static VkSampler		postprocess_sampler;
 static VkImage			swapchain_images[MAX_SWAP_CHAIN_IMAGES];
@@ -1105,6 +1110,8 @@ static void GL_InitDevice (void)
 	vulkan_globals.swap_chain_full_screen_acquired = false;
 	vulkan_globals.screen_effects_sops = false;
 	vulkan_globals.ray_query = false;
+	vulkan_globals.synchronization_2 = false;
+	vulkan_globals.dynamic_rendering = false;
 
 	vkGetPhysicalDeviceMemoryProperties (vulkan_physical_device, &vulkan_globals.memory_properties);
 	vkGetPhysicalDeviceProperties (vulkan_physical_device, &vulkan_globals.device_properties);
@@ -1134,6 +1141,10 @@ static void GL_InitDevice (void)
 #endif
 			if (strcmp (VK_KHR_RAY_QUERY_EXTENSION_NAME, device_extensions[i].extensionName) == 0)
 				vulkan_globals.ray_query = true;
+			if (strcmp (VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, device_extensions[i].extensionName) == 0)
+				vulkan_globals.synchronization_2 = true;
+			if (strcmp (VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, device_extensions[i].extensionName) == 0)
+				vulkan_globals.dynamic_rendering = true;
 		}
 
 		Mem_Free (device_extensions);
@@ -1196,6 +1207,10 @@ static void GL_InitDevice (void)
 		}
 	}
 
+	gfx_timestamp_valid_bits = 0;
+	if (found_graphics_queue)
+		gfx_timestamp_valid_bits = queue_family_properties[vulkan_globals.gfx_queue_family_index].timestampValidBits;
+
 	Mem_Free (queue_supports_present);
 	Mem_Free (queue_family_properties);
 
@@ -1215,6 +1230,8 @@ static void GL_InitDevice (void)
 	ZEROED_STRUCT (VkPhysicalDeviceBufferDeviceAddressFeaturesKHR, buffer_device_address_features);
 	ZEROED_STRUCT (VkPhysicalDeviceAccelerationStructureFeaturesKHR, acceleration_structure_features);
 	ZEROED_STRUCT (VkPhysicalDeviceRayQueryFeaturesKHR, ray_query_features);
+	ZEROED_STRUCT (VkPhysicalDeviceSynchronization2FeaturesKHR, synchronization_2_features);
+	ZEROED_STRUCT (VkPhysicalDeviceDynamicRenderingFeaturesKHR, dynamic_rendering_features);
 	memset (&vulkan_globals.physical_device_acceleration_structure_properties, 0, sizeof (vulkan_globals.physical_device_acceleration_structure_properties));
 	if (vulkan_globals.vulkan_1_1_available)
 	{
@@ -1255,6 +1272,16 @@ static void GL_InitDevice (void)
 			ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 			CHAIN_PNEXT (device_features_next, ray_query_features);
 		}
+		if (vulkan_globals.synchronization_2)
+		{
+			synchronization_2_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+			CHAIN_PNEXT (device_features_next, synchronization_2_features);
+		}
+		if (vulkan_globals.dynamic_rendering)
+		{
+			dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+			CHAIN_PNEXT (device_features_next, dynamic_rendering_features);
+		}
 
 		fpGetPhysicalDeviceFeatures2 (vulkan_physical_device, &physical_device_features_2);
 		vulkan_globals.device_features = physical_device_features_2.features;
@@ -1281,6 +1308,14 @@ static void GL_InitDevice (void)
 	if (vulkan_globals.ray_query)
 		Con_Printf ("Using ray queries\n");
 
+	vulkan_globals.synchronization_2 = vulkan_globals.synchronization_2 && synchronization_2_features.synchronization2;
+	if (vulkan_globals.synchronization_2)
+		Con_Printf ("Using VK_KHR_synchronization2\n");
+
+	vulkan_globals.dynamic_rendering = vulkan_globals.dynamic_rendering && dynamic_rendering_features.dynamicRendering;
+	if (vulkan_globals.dynamic_rendering)
+		Con_Printf ("Using VK_KHR_dynamic_rendering\n");
+
 	const char *device_extensions[32] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 	uint32_t	numEnabledExtensions = 1;
 	if (vulkan_globals.dedicated_allocation)
@@ -1305,6 +1340,10 @@ static void GL_InitDevice (void)
 		device_extensions[numEnabledExtensions++] = VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME;
 		device_extensions[numEnabledExtensions++] = VK_KHR_RAY_QUERY_EXTENSION_NAME;
 	}
+	if (vulkan_globals.synchronization_2)
+		device_extensions[numEnabledExtensions++] = VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME;
+	if (vulkan_globals.dynamic_rendering)
+		device_extensions[numEnabledExtensions++] = VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 
 	const VkBool32 extended_format_support = vulkan_globals.device_features.shaderStorageImageExtendedFormats;
 	const VkBool32 sampler_anisotropic = vulkan_globals.device_features.samplerAnisotropy;
@@ -1330,6 +1369,10 @@ static void GL_InitDevice (void)
 		CHAIN_PNEXT (device_create_info_next, acceleration_structure_features);
 		CHAIN_PNEXT (device_create_info_next, ray_query_features);
 	}
+	if (vulkan_globals.synchronization_2)
+		CHAIN_PNEXT (device_create_info_next, synchronization_2_features);
+	if (vulkan_globals.dynamic_rendering)
+		CHAIN_PNEXT (device_create_info_next, dynamic_rendering_features);
 	device_create_info.queueCreateInfoCount = 1;
 	device_create_info.pQueueCreateInfos = &queue_create_info;
 	device_create_info.enabledExtensionCount = numEnabledExtensions;
@@ -1365,6 +1408,15 @@ static void GL_InitDevice (void)
 		GET_GLOBAL_DEVICE_PROC_ADDR (vk_destroy_acceleration_structure, vkDestroyAccelerationStructureKHR);
 		GET_GLOBAL_DEVICE_PROC_ADDR (vk_cmd_build_acceleration_structures, vkCmdBuildAccelerationStructuresKHR);
 		GET_GLOBAL_DEVICE_PROC_ADDR (vk_get_acceleration_structure_device_address, vkGetAccelerationStructureDeviceAddressKHR);
+	}
+	if (vulkan_globals.synchronization_2)
+	{
+		GET_GLOBAL_DEVICE_PROC_ADDR (vk_cmd_pipeline_barrier_2, vkCmdPipelineBarrier2KHR);
+	}
+	if (vulkan_globals.dynamic_rendering)
+	{
+		GET_GLOBAL_DEVICE_PROC_ADDR (vk_cmd_begin_rendering, vkCmdBeginRenderingKHR);
+		GET_GLOBAL_DEVICE_PROC_ADDR (vk_cmd_end_rendering, vkCmdEndRenderingKHR);
 	}
 #ifdef _DEBUG
 	if (vulkan_globals.debug_utils)
@@ -1517,11 +1569,8 @@ static void GL_InitCommandBuffers (void)
 		err = vkCreateFence (vulkan_globals.device, &fence_create_info, NULL, &command_buffer_fences[i]);
 		if (err != VK_SUCCESS)
 			Sys_Error ("vkCreateFence failed");
-
-		ZEROED_STRUCT (VkSemaphoreCreateInfo, semaphore_create_info);
-		semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		err = vkCreateSemaphore (vulkan_globals.device, &semaphore_create_info, NULL, &draw_complete_semaphores[i]);
 	}
+	// Note: draw_complete_semaphores are now created per-swapchain-image in GL_CreateSwapChain
 }
 
 /*
@@ -1635,6 +1684,7 @@ static void GL_CreateRenderPasses ()
 		}
 	}
 
+	if (!vulkan_globals.dynamic_rendering)
 	{
 		// UI Render Pass (single subpass: GUI draws to color_buffers[1] with transparent clear)
 		ZEROED_STRUCT (VkAttachmentDescription, ui_attachment);
@@ -2451,6 +2501,18 @@ static qboolean GL_CreateSwapChain (void)
 			Sys_Error ("vkCreateSemaphore failed");
 	}
 
+	// One draw-complete semaphore per swapchain image (not per frame-in-flight).
+	// This follows Khronos guidance for semaphore reuse safety: each swapchain
+	// image gets its own "render finished" semaphore, preventing reuse hazards
+	// when the presentation engine returns images out of order.
+	for (i = 0; i < num_swap_chain_images; ++i)
+	{
+		assert (draw_complete_semaphores[i] == VK_NULL_HANDLE);
+		err = vkCreateSemaphore (vulkan_globals.device, &semaphore_create_info, NULL, &draw_complete_semaphores[i]);
+		if (err != VK_SUCCESS)
+			Sys_Error ("vkCreateSemaphore failed");
+	}
+
 	return true;
 }
 
@@ -2490,6 +2552,7 @@ static void GL_CreateFrameBuffers (void)
 		GL_SetObjectName ((uint64_t)main_framebuffers[i], VK_OBJECT_TYPE_FRAMEBUFFER, "main");
 	}
 
+	if (!vulkan_globals.dynamic_rendering)
 	{
 		// UI framebuffer: single attachment (color_buffers[1] - separate from game)
 		ZEROED_STRUCT (VkFramebufferCreateInfo, framebuffer_create_info);
@@ -2589,6 +2652,10 @@ static void GL_CreateRenderResources (void)
 		rmlui_config.render_pass = gui_cbx->render_pass;
 		rmlui_config.subpass = gui_cbx->subpass;
 		rmlui_config.memory_properties = vulkan_globals.memory_properties;
+		rmlui_config.timestamp_valid_bits = gfx_timestamp_valid_bits;
+		rmlui_config.sync2_available = vulkan_globals.synchronization_2;
+		rmlui_config.cmd_pipeline_barrier_2 = vulkan_globals.synchronization_2 ? vulkan_globals.vk_cmd_pipeline_barrier_2 : NULL;
+		rmlui_config.dynamic_rendering = vulkan_globals.dynamic_rendering;
 		rmlui_config.cmd_bind_pipeline = vulkan_globals.vk_cmd_bind_pipeline;
 		rmlui_config.cmd_bind_descriptor_sets = vulkan_globals.vk_cmd_bind_descriptor_sets;
 		rmlui_config.cmd_bind_vertex_buffers = vkCmdBindVertexBuffers;
@@ -2658,8 +2725,11 @@ static void GL_DestroyRenderResources (void)
 		main_framebuffers[i] = VK_NULL_HANDLE;
 	}
 
-	vkDestroyFramebuffer (vulkan_globals.device, ui_framebuffers[0], NULL);
-	ui_framebuffers[0] = VK_NULL_HANDLE;
+	if (ui_framebuffers[0] != VK_NULL_HANDLE)
+	{
+		vkDestroyFramebuffer (vulkan_globals.device, ui_framebuffers[0], NULL);
+		ui_framebuffers[0] = VK_NULL_HANDLE;
+	}
 
 	for (uint32_t i = 0; i < num_swap_chain_images; ++i)
 	{
@@ -2678,12 +2748,21 @@ static void GL_DestroyRenderResources (void)
 		image_aquired_semaphores[i] = VK_NULL_HANDLE;
 	}
 
+	for (uint32_t i = 0; i < num_swap_chain_images; ++i)
+	{
+		vkDestroySemaphore (vulkan_globals.device, draw_complete_semaphores[i], NULL);
+		draw_complete_semaphores[i] = VK_NULL_HANDLE;
+	}
+
 	fpDestroySwapchainKHR (vulkan_globals.device, vulkan_swapchain, NULL);
 	vulkan_swapchain = VK_NULL_HANDLE;
 
-	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.secondary_cb_contexts[SCBX_GUI][0].render_pass, NULL);
-	for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[SCBX_GUI]; ++i)
-		vulkan_globals.secondary_cb_contexts[SCBX_GUI][i].render_pass = VK_NULL_HANDLE;
+	if (vulkan_globals.secondary_cb_contexts[SCBX_GUI][0].render_pass != VK_NULL_HANDLE)
+	{
+		vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.secondary_cb_contexts[SCBX_GUI][0].render_pass, NULL);
+		for (int i = 0; i < SECONDARY_CB_MULTIPLICITY[SCBX_GUI]; ++i)
+			vulkan_globals.secondary_cb_contexts[SCBX_GUI][i].render_pass = VK_NULL_HANDLE;
+	}
 
 	vkDestroyRenderPass (vulkan_globals.device, vulkan_globals.postprocess_render_pass, NULL);
 	vulkan_globals.postprocess_render_pass = VK_NULL_HANDLE;
@@ -2768,6 +2847,17 @@ void GL_BeginRenderingTask (void *unused)
 			inheritance_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 			inheritance_info.renderPass = cbx->render_pass;
 			inheritance_info.subpass = cbx->subpass;
+
+			ZEROED_STRUCT (VkCommandBufferInheritanceRenderingInfoKHR, inheritance_rendering_info);
+			if (vulkan_globals.dynamic_rendering && scbx_index == SCBX_GUI)
+			{
+				inheritance_rendering_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR;
+				inheritance_rendering_info.colorAttachmentCount = 1;
+				inheritance_rendering_info.pColorAttachmentFormats = &vulkan_globals.color_format;
+				inheritance_rendering_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+				inheritance_info.renderPass = VK_NULL_HANDLE;
+				inheritance_info.pNext = &inheritance_rendering_info;
+			}
 
 			ZEROED_STRUCT (VkCommandBufferBeginInfo, command_buffer_begin_info);
 			command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -3332,23 +3422,97 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 	GL_ScreenEffects (&vulkan_globals.primary_cb_contexts[PCBX_RENDER_PASSES], screen_effects, parms);
 
 	{
-		// UI Render Pass (GUI draws to color_buffers[1] with transparent clear)
-		VkClearValue ui_clear_value;
-		ui_clear_value.color.float32[0] = 0.0f;
-		ui_clear_value.color.float32[1] = 0.0f;
-		ui_clear_value.color.float32[2] = 0.0f;
-		ui_clear_value.color.float32[3] = 0.0f;
+#ifdef USE_RMLUI
+		UI_WriteBeginTimestamp (render_passes_cb);
+#endif
+		if (vulkan_globals.dynamic_rendering)
+		{
+			// Dynamic rendering path: explicit barriers + vkCmdBeginRenderingKHR
+			ZEROED_STRUCT (VkImageMemoryBarrier, ui_pre_barrier);
+			ui_pre_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			ui_pre_barrier.srcAccessMask = 0;
+			ui_pre_barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			ui_pre_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			ui_pre_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			ui_pre_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ui_pre_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ui_pre_barrier.image = vulkan_globals.color_buffers[1];
+			ui_pre_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			ui_pre_barrier.subresourceRange.baseMipLevel = 0;
+			ui_pre_barrier.subresourceRange.levelCount = 1;
+			ui_pre_barrier.subresourceRange.baseArrayLayer = 0;
+			ui_pre_barrier.subresourceRange.layerCount = 1;
+			vkCmdPipelineBarrier (
+				render_passes_cb, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, NULL, 0, NULL, 1, &ui_pre_barrier);
 
-		ZEROED_STRUCT (VkRenderPassBeginInfo, ui_rp_begin_info);
-		ui_rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		ui_rp_begin_info.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
-		ui_rp_begin_info.framebuffer = ui_framebuffers[0];
-		ui_rp_begin_info.renderArea = render_area;
-		ui_rp_begin_info.clearValueCount = 1;
-		ui_rp_begin_info.pClearValues = &ui_clear_value;
-		vkCmdBeginRenderPass (render_passes_cb, &ui_rp_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-		vkCmdExecuteCommands (render_passes_cb, 1, &vulkan_globals.secondary_cb_contexts[SCBX_GUI]->cb);
-		vkCmdEndRenderPass (render_passes_cb);
+			VkClearValue ui_clear_value;
+			ui_clear_value.color.float32[0] = 0.0f;
+			ui_clear_value.color.float32[1] = 0.0f;
+			ui_clear_value.color.float32[2] = 0.0f;
+			ui_clear_value.color.float32[3] = 0.0f;
+
+			ZEROED_STRUCT (VkRenderingAttachmentInfoKHR, ui_color_attachment);
+			ui_color_attachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+			ui_color_attachment.imageView = color_buffers_view[1];
+			ui_color_attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			ui_color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			ui_color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			ui_color_attachment.clearValue = ui_clear_value;
+
+			ZEROED_STRUCT (VkRenderingInfoKHR, rendering_info);
+			rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+			rendering_info.renderArea = render_area;
+			rendering_info.layerCount = 1;
+			rendering_info.colorAttachmentCount = 1;
+			rendering_info.pColorAttachments = &ui_color_attachment;
+			rendering_info.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
+
+			vulkan_globals.vk_cmd_begin_rendering (render_passes_cb, &rendering_info);
+			vkCmdExecuteCommands (render_passes_cb, 1, &vulkan_globals.secondary_cb_contexts[SCBX_GUI]->cb);
+			vulkan_globals.vk_cmd_end_rendering (render_passes_cb);
+
+			// Transition to SHADER_READ_ONLY for post-process sampling
+			ZEROED_STRUCT (VkImageMemoryBarrier, ui_post_barrier);
+			ui_post_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			ui_post_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			ui_post_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			ui_post_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			ui_post_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			ui_post_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ui_post_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ui_post_barrier.image = vulkan_globals.color_buffers[1];
+			ui_post_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			ui_post_barrier.subresourceRange.baseMipLevel = 0;
+			ui_post_barrier.subresourceRange.levelCount = 1;
+			ui_post_barrier.subresourceRange.baseArrayLayer = 0;
+			ui_post_barrier.subresourceRange.layerCount = 1;
+			vkCmdPipelineBarrier (
+				render_passes_cb, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1,
+				&ui_post_barrier);
+		}
+		else
+		{
+			// Legacy render pass path
+			VkClearValue ui_clear_value;
+			ui_clear_value.color.float32[0] = 0.0f;
+			ui_clear_value.color.float32[1] = 0.0f;
+			ui_clear_value.color.float32[2] = 0.0f;
+			ui_clear_value.color.float32[3] = 0.0f;
+
+			ZEROED_STRUCT (VkRenderPassBeginInfo, ui_rp_begin_info);
+			ui_rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			ui_rp_begin_info.renderPass = vulkan_globals.secondary_cb_contexts[SCBX_GUI]->render_pass;
+			ui_rp_begin_info.framebuffer = ui_framebuffers[0];
+			ui_rp_begin_info.renderArea = render_area;
+			ui_rp_begin_info.clearValueCount = 1;
+			ui_rp_begin_info.pClearValues = &ui_clear_value;
+			vkCmdBeginRenderPass (render_passes_cb, &ui_rp_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			vkCmdExecuteCommands (render_passes_cb, 1, &vulkan_globals.secondary_cb_contexts[SCBX_GUI]->cb);
+			vkCmdEndRenderPass (render_passes_cb);
+		}
+#ifdef USE_RMLUI
+		UI_WriteEndTimestamp (render_passes_cb);
+#endif
 	}
 
 	{
@@ -3410,8 +3574,12 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 		submit_info.waitSemaphoreCount = swapchain_acquired ? 1 : 0;
 		submit_info.pWaitSemaphores = &image_aquired_semaphores[cb_index];
 		submit_info.signalSemaphoreCount = swapchain_acquired ? 1 : 0;
-		submit_info.pSignalSemaphores = &draw_complete_semaphores[cb_index];
-		VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		submit_info.pSignalSemaphores = &draw_complete_semaphores[current_swapchain_buffer];
+		// Wait at COLOR_ATTACHMENT_OUTPUT: world and UI render to off-screen color
+		// buffers (not the swapchain image), so they can proceed in parallel with
+		// image acquisition. Only the post-process pass writes to the swapchain
+		// image as a color attachment, making this the precise first-use stage.
+		VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		submit_info.pWaitDstStageMask = &wait_dst_stage_mask;
 
 		err = vkQueueSubmit (vulkan_globals.queue, 1, &submit_info, command_buffer_fences[cb_index]);
@@ -3434,7 +3602,7 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = &vulkan_swapchain, present_info.pImageIndices = &current_swapchain_buffer;
 		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores = &draw_complete_semaphores[cb_index];
+		present_info.pWaitSemaphores = &draw_complete_semaphores[current_swapchain_buffer];
 		err = fpQueuePresentKHR (vulkan_globals.queue, &present_info);
 #if defined(VK_EXT_full_screen_exclusive)
 		if ((err == VK_ERROR_OUT_OF_DATE_KHR) || (err == VK_ERROR_SURFACE_LOST_KHR) || (err == VK_SUBOPTIMAL_KHR) ||

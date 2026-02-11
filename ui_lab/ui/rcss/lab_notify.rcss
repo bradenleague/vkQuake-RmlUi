@@ -26,9 +26,6 @@
 }
 
 .visor-notify {
-    position: absolute;
-    top: 120dp;
-    left: 70dp;
     display: flex;
     flex-direction: column;
     gap: 3dp;

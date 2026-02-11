@@ -141,24 +141,24 @@ body.visor-hud {
 
 .visor-left-col {
     position: absolute;
-    top: 50dp;
+    top: 58dp;
     left: 22dp;
     display: flex;
     flex-direction: column;
     gap: 10dp;
-    max-width: 320dp;
+    max-width: 500dp;
 }
 
 /* ── Powerup Badges ── */
 
 .visor-powerups {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6dp;
 }
 
 .visor-powerup {
-    padding: 5dp 10dp;
+    padding: 5dp 14dp;
     border: 1dp #3a6b3a;
     background-color: #0a1a0ed8;
     animation: 0.25s quadratic-out powerup-enter;

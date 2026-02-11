@@ -8,6 +8,7 @@
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/FileInterface.h>
 #include <RmlUi/Core/Log.h>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 
@@ -27,9 +28,11 @@ namespace QRmlUI
 
 RenderInterface_VK::RenderInterface_VK ()
 	: m_config{}, m_current_cmd (VK_NULL_HANDLE), m_viewport_width (0), m_viewport_height (0), m_scissor_enabled (false), m_scissor_rect{},
-	  m_transform_enabled (false), m_frame_draw_calls (0), m_frame_indices (0), m_pipeline_textured (VK_NULL_HANDLE), m_pipeline_untextured (VK_NULL_HANDLE),
-	  m_pipeline_layout (VK_NULL_HANDLE), m_descriptor_pool (VK_NULL_HANDLE), m_texture_set_layout (VK_NULL_HANDLE), m_sampler (VK_NULL_HANDLE),
-	  m_white_texture (nullptr), m_next_geometry_handle (1), m_next_texture_handle (1), m_initialized (false), m_garbage_index (0)
+	  m_transform_enabled (false), m_frame_draw_calls (0), m_frame_indices (0), m_pipeline_textured (VK_NULL_HANDLE), m_pipeline_layout (VK_NULL_HANDLE),
+	  m_descriptor_pool (VK_NULL_HANDLE), m_texture_set_layout (VK_NULL_HANDLE), m_sampler (VK_NULL_HANDLE), m_white_texture (nullptr),
+	  m_next_geometry_handle (1), m_next_texture_handle (1), m_initialized (false), m_upload_cmd_pool (VK_NULL_HANDLE), m_upload_fence (VK_NULL_HANDLE),
+	  m_upload_fence_pending (false), m_timestamp_query_pool (VK_NULL_HANDLE), m_timestamps_supported (false), m_timestamp_period (0.0f),
+	  m_timestamp_valid_bits (0), m_last_gpu_time_ms (0.0), m_timestamp_frame_index (0), m_garbage_index (0)
 {
 	m_transform = Rml::Matrix4f::Identity ();
 }
@@ -77,13 +80,60 @@ bool RenderInterface_VK::Initialize (const VulkanConfig &config)
 	vkGetPhysicalDeviceProperties (m_config.physical_device, &device_props);
 	m_image_pool.Initialize (m_config.device, m_config.memory_properties, device_props.limits.bufferImageGranularity);
 
-	// Create default white texture for untextured geometry
+	// Create persistent batch upload command pool and fence (L3)
+	{
+		VkCommandPoolCreateInfo pool_ci{};
+		pool_ci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		pool_ci.queueFamilyIndex = m_config.queue_family_index;
+		pool_ci.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		if (vkCreateCommandPool (m_config.device, &pool_ci, nullptr, &m_upload_cmd_pool) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create batch upload command pool");
+			return false;
+		}
+
+		VkFenceCreateInfo fence_ci{};
+		fence_ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		if (vkCreateFence (m_config.device, &fence_ci, nullptr, &m_upload_fence) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create batch upload fence");
+			vkDestroyCommandPool (m_config.device, m_upload_cmd_pool, nullptr);
+			m_upload_cmd_pool = VK_NULL_HANDLE;
+			return false;
+		}
+		m_upload_fence_pending = false;
+	}
+
+	// Create GPU timestamp query pool (L4)
+	m_timestamp_valid_bits = m_config.timestamp_valid_bits;
+	m_timestamp_period = device_props.limits.timestampPeriod;
+	m_timestamps_supported = (m_timestamp_valid_bits > 0) && (m_timestamp_period > 0.0f);
+	if (m_timestamps_supported)
+	{
+		VkQueryPoolCreateInfo qp_ci{};
+		qp_ci.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		qp_ci.queryType = VK_QUERY_TYPE_TIMESTAMP;
+		qp_ci.queryCount = 4; // 2 per frame * DOUBLE_BUFFERED
+		if (vkCreateQueryPool (m_config.device, &qp_ci, nullptr, &m_timestamp_query_pool) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_WARNING, "Failed to create timestamp query pool, disabling GPU timing");
+			m_timestamps_supported = false;
+		}
+	}
+	m_last_gpu_time_ms = 0.0;
+	m_timestamp_frame_index = 0;
+
+	// Create default white texture — required for untextured geometry fallback.
+	// All geometry uses the textured pipeline with this as the default texture,
+	// so initialization must fail if this texture cannot be created.
 	Rml::byte white_pixel[] = {255, 255, 255, 255};
 	auto	  white_handle = GenerateTexture (Rml::Span<const Rml::byte> (white_pixel, 4), {1, 1});
-	if (white_handle)
+	if (!white_handle)
 	{
-		m_white_texture = m_textures[white_handle];
+		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create default white texture");
+		return false;
 	}
+	m_white_texture = m_textures[white_handle];
 
 	m_initialized = true;
 	return true;
@@ -104,6 +154,33 @@ void RenderInterface_VK::Shutdown ()
 		DestroyBuffer (upload.staging_buffer, upload.staging_memory);
 	}
 	m_pending_uploads.clear ();
+
+	// Clean up batch upload resources (L3)
+	for (auto &staged : m_staged_uploads)
+		DestroyBuffer (staged.staging_buffer, staged.staging_memory);
+	m_staged_uploads.clear ();
+	for (auto &pair : m_prev_batch_staging)
+		DestroyBuffer (pair.first, pair.second);
+	m_prev_batch_staging.clear ();
+	if (m_upload_fence != VK_NULL_HANDLE)
+	{
+		vkDestroyFence (m_config.device, m_upload_fence, nullptr);
+		m_upload_fence = VK_NULL_HANDLE;
+	}
+	if (m_upload_cmd_pool != VK_NULL_HANDLE)
+	{
+		vkDestroyCommandPool (m_config.device, m_upload_cmd_pool, nullptr);
+		m_upload_cmd_pool = VK_NULL_HANDLE;
+	}
+	m_upload_fence_pending = false;
+
+	// Destroy timestamp query pool (L4)
+	if (m_timestamp_query_pool != VK_NULL_HANDLE)
+	{
+		vkDestroyQueryPool (m_config.device, m_timestamp_query_pool, nullptr);
+		m_timestamp_query_pool = VK_NULL_HANDLE;
+	}
+	m_timestamps_supported = false;
 
 	// Release all geometries
 	for (auto &pair : m_geometries)
@@ -161,11 +238,6 @@ void RenderInterface_VK::DestroyPipelines ()
 		vkDestroyPipeline (m_config.device, m_pipeline_textured, nullptr);
 		m_pipeline_textured = VK_NULL_HANDLE;
 	}
-	if (m_pipeline_untextured != VK_NULL_HANDLE)
-	{
-		vkDestroyPipeline (m_config.device, m_pipeline_untextured, nullptr);
-		m_pipeline_untextured = VK_NULL_HANDLE;
-	}
 	if (m_pipeline_layout != VK_NULL_HANDLE)
 	{
 		vkDestroyPipelineLayout (m_config.device, m_pipeline_layout, nullptr);
@@ -200,31 +272,36 @@ bool RenderInterface_VK::Reinitialize (const VulkanConfig &config)
 
 	vkDeviceWaitIdle (m_config.device);
 
-	// Destroy old pipelines (they reference the old render pass)
-	if (m_pipeline_textured != VK_NULL_HANDLE)
+	// H2: With dynamic rendering, the pipeline is render-pass-independent.
+	// Only recreate if color_format or sample_count changed.
+	bool need_pipeline_recreate = !config.dynamic_rendering || (config.color_format != m_config.color_format) || (config.sample_count != m_config.sample_count);
+
+	if (need_pipeline_recreate)
 	{
-		vkDestroyPipeline (m_config.device, m_pipeline_textured, nullptr);
-		m_pipeline_textured = VK_NULL_HANDLE;
-	}
-	if (m_pipeline_untextured != VK_NULL_HANDLE)
-	{
-		vkDestroyPipeline (m_config.device, m_pipeline_untextured, nullptr);
-		m_pipeline_untextured = VK_NULL_HANDLE;
-	}
-	if (m_pipeline_layout != VK_NULL_HANDLE)
-	{
-		vkDestroyPipelineLayout (m_config.device, m_pipeline_layout, nullptr);
-		m_pipeline_layout = VK_NULL_HANDLE;
+		// Destroy old pipelines (they reference the old render pass)
+		if (m_pipeline_textured != VK_NULL_HANDLE)
+		{
+			vkDestroyPipeline (m_config.device, m_pipeline_textured, nullptr);
+			m_pipeline_textured = VK_NULL_HANDLE;
+		}
+		if (m_pipeline_layout != VK_NULL_HANDLE)
+		{
+			vkDestroyPipelineLayout (m_config.device, m_pipeline_layout, nullptr);
+			m_pipeline_layout = VK_NULL_HANDLE;
+		}
 	}
 
-	// Update config with new render pass
+	// Update config
 	m_config = config;
 
-	// Recreate pipeline with new render pass
-	if (!CreatePipeline ())
+	if (need_pipeline_recreate)
 	{
-		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to recreate pipeline");
-		return false;
+		// Recreate pipeline with new render pass / format
+		if (!CreatePipeline ())
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to recreate pipeline");
+			return false;
+		}
 	}
 
 	return true;
@@ -232,11 +309,31 @@ bool RenderInterface_VK::Reinitialize (const VulkanConfig &config)
 
 void RenderInterface_VK::BeginFrame (VkCommandBuffer cmd, int width, int height)
 {
+	assert (m_initialized && "BeginFrame called on uninitialized renderer");
+	assert (m_current_cmd == VK_NULL_HANDLE && "BeginFrame called without EndFrame — nested frames not allowed");
+	assert (cmd != VK_NULL_HANDLE && "BeginFrame called with null command buffer");
 	m_current_cmd = cmd;
 	m_viewport_width = width;
 	m_viewport_height = height;
 	m_frame_draw_calls = 0;
 	m_frame_indices = 0;
+
+	// Read back previous frame's GPU timestamp results (L4)
+	if (m_timestamps_supported)
+	{
+		int		 prev_slot = 1 - m_timestamp_frame_index;
+		uint64_t timestamps[2] = {0, 0};
+		VkResult ts_result = vkGetQueryPoolResults (
+			m_config.device, m_timestamp_query_pool, static_cast<uint32_t> (prev_slot * 2), 2, sizeof (timestamps), timestamps, sizeof (uint64_t),
+			VK_QUERY_RESULT_64_BIT);
+		if (ts_result == VK_SUCCESS)
+		{
+			uint64_t mask = (m_timestamp_valid_bits == 64) ? UINT64_MAX : ((1ULL << m_timestamp_valid_bits) - 1);
+			uint64_t delta = (timestamps[1] - timestamps[0]) & mask;
+			m_last_gpu_time_ms = static_cast<double> (delta) * static_cast<double> (m_timestamp_period) / 1e6;
+		}
+		// VK_NOT_READY on first frame — report 0.0 ms
+	}
 
 	// Set viewport
 	VkViewport viewport{};
@@ -263,11 +360,25 @@ void RenderInterface_VK::BeginFrame (VkCommandBuffer cmd, int width, int height)
 
 void RenderInterface_VK::EndFrame ()
 {
+	assert (m_current_cmd != VK_NULL_HANDLE && "EndFrame called without BeginFrame");
+
+	// Flush any batched texture uploads before the frame's command buffers are submitted (L3)
+	FlushPendingUploads ();
+
 	m_current_cmd = VK_NULL_HANDLE;
 }
 
 void RenderInterface_VK::CollectGarbage ()
 {
+	assert (m_garbage_index >= 0 && m_garbage_index < GARBAGE_SLOTS && "Garbage index out of bounds");
+
+	// Poll batch upload fence — free previous batch staging if signaled (L3)
+	if (m_upload_fence_pending && vkGetFenceStatus (m_config.device, m_upload_fence) == VK_SUCCESS)
+	{
+		FreePrevBatchStaging ();
+		m_upload_fence_pending = false;
+	}
+
 	// Poll pending texture uploads — destroy signaled entries
 	for (auto it = m_pending_uploads.begin (); it != m_pending_uploads.end ();)
 	{
@@ -284,9 +395,11 @@ void RenderInterface_VK::CollectGarbage ()
 		}
 	}
 
-	// Toggle to the other slot - resources queued there are from 2 frames ago
-	// and are now safe to destroy (GPU fence for that frame has been waited on)
+	// Toggle to the other slot — resources queued there are from 2+ frames ago
+	// and are now safe to destroy (GPU fence for that frame has been waited on
+	// by GL_BeginRenderingTask before calling UI_CollectGarbage).
 	m_garbage_index = (m_garbage_index + 1) % GARBAGE_SLOTS;
+	assert (m_garbage_index >= 0 && m_garbage_index < GARBAGE_SLOTS);
 
 	// Destroy all geometries in this slot
 	for (GeometryData *geometry : m_geometry_garbage[m_garbage_index])
@@ -314,6 +427,7 @@ void RenderInterface_VK::SetCommandBuffer (VkCommandBuffer cmd)
 
 Rml::CompiledGeometryHandle RenderInterface_VK::CompileGeometry (Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices)
 {
+	assert (m_initialized && "CompileGeometry called on uninitialized renderer");
 	auto *geometry = new GeometryData ();
 	geometry->num_indices = static_cast<int> (indices.size ());
 
@@ -348,6 +462,7 @@ Rml::CompiledGeometryHandle RenderInterface_VK::CompileGeometry (Rml::Span<const
 
 void RenderInterface_VK::RenderGeometry (Rml::CompiledGeometryHandle geometry_handle, Rml::Vector2f translation, Rml::TextureHandle texture_handle)
 {
+	assert (m_white_texture != nullptr && "White texture fallback is null — initialization failed?");
 	if (m_current_cmd == VK_NULL_HANDLE)
 		return;
 
@@ -367,18 +482,17 @@ void RenderInterface_VK::RenderGeometry (Rml::CompiledGeometryHandle geometry_ha
 		}
 	}
 
-	// Use white texture if no texture specified
+	// Use white texture for untextured geometry — all geometry goes through the
+	// textured pipeline. The untextured pipeline was removed because white-texture
+	// fallback makes it unreachable.
 	if (!texture)
 	{
 		texture = m_white_texture;
 	}
 
-	// Select pipeline based on whether we have a texture
-	VkPipeline pipeline = texture ? m_pipeline_textured : m_pipeline_untextured;
-
-	// Bind pipeline
+	// Bind pipeline (always textured — white texture serves as untextured fallback)
 	auto bind_pipeline = m_config.cmd_bind_pipeline ? m_config.cmd_bind_pipeline : vkCmdBindPipeline;
-	bind_pipeline (m_current_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	bind_pipeline (m_current_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_textured);
 
 	// Set scissor
 	auto set_scissor = m_config.cmd_set_scissor ? m_config.cmd_set_scissor : vkCmdSetScissor;
@@ -503,7 +617,7 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 
 	VkDeviceSize image_size = source_dimensions.x * source_dimensions.y * 4;
 
-	// Create staging buffer (still uses individual allocation — transient, freed after upload)
+	// Create staging buffer
 	VkBuffer	   staging_buffer;
 	VkDeviceMemory staging_memory;
 	staging_buffer =
@@ -551,89 +665,10 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 
 	vkBindImageMemory (m_config.device, texture->image, texture->memory_alloc.memory, texture->memory_alloc.offset);
 
-	// Create command buffer for image transfer
-	VkCommandPoolCreateInfo pool_info{};
-	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	pool_info.queueFamilyIndex = m_config.queue_family_index;
-	pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-	VkCommandPool cmd_pool;
-	vkCreateCommandPool (m_config.device, &pool_info, nullptr, &cmd_pool);
-
-	VkCommandBufferAllocateInfo cmd_alloc_info{};
-	cmd_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmd_alloc_info.commandPool = cmd_pool;
-	cmd_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmd_alloc_info.commandBufferCount = 1;
-
-	VkCommandBuffer cmd;
-	vkAllocateCommandBuffers (m_config.device, &cmd_alloc_info, &cmd);
-
-	VkCommandBufferBeginInfo begin_info{};
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	vkBeginCommandBuffer (cmd, &begin_info);
-
-	// Transition image to transfer destination
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = texture->image;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.srcAccessMask = 0;
-	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-	vkCmdPipelineBarrier (cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-	// Copy buffer to image
-	VkBufferImageCopy region{};
-	region.bufferOffset = 0;
-	region.bufferRowLength = 0;
-	region.bufferImageHeight = 0;
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.mipLevel = 0;
-	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
-	region.imageOffset = {0, 0, 0};
-	region.imageExtent = {static_cast<uint32_t> (source_dimensions.x), static_cast<uint32_t> (source_dimensions.y), 1};
-
-	vkCmdCopyBufferToImage (cmd, staging_buffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-	// Transition image to shader read
-	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-	vkCmdPipelineBarrier (cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-	vkEndCommandBuffer (cmd);
-
-	// Submit with fence for async completion tracking (no vkQueueWaitIdle stall)
-	VkFenceCreateInfo fence_info{};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-	VkFence upload_fence;
-	vkCreateFence (m_config.device, &fence_info, nullptr, &upload_fence);
-
-	VkSubmitInfo submit_info{};
-	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &cmd;
-
-	vkQueueSubmit (m_config.graphics_queue, 1, &submit_info, upload_fence);
-
-	// Defer staging resource cleanup until fence signals
-	m_pending_uploads.push_back ({upload_fence, cmd_pool, staging_buffer, staging_memory});
-
-	// Create image view (host-side operation, safe immediately)
+	// Create image view and descriptor set BEFORE staging the upload.
+	// Both are host-side operations that don't depend on the GPU transfer.
+	// This ensures that if either fails, no staged/pending upload entry
+	// references the texture — avoiding use-after-free in FlushPendingUploads().
 	VkImageViewCreateInfo view_info{};
 	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	view_info.image = texture->image;
@@ -649,13 +684,13 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 	{
 		m_image_pool.Free (texture->memory_alloc);
 		vkDestroyImage (m_config.device, texture->image, nullptr);
+		DestroyBuffer (staging_buffer, staging_memory);
 		delete texture;
 		return 0;
 	}
 
 	texture->sampler = m_sampler;
 
-	// Allocate descriptor set for this texture
 	VkDescriptorSetAllocateInfo desc_alloc_info{};
 	desc_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	desc_alloc_info.descriptorPool = m_descriptor_pool;
@@ -667,11 +702,11 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 		vkDestroyImageView (m_config.device, texture->view, nullptr);
 		m_image_pool.Free (texture->memory_alloc);
 		vkDestroyImage (m_config.device, texture->image, nullptr);
+		DestroyBuffer (staging_buffer, staging_memory);
 		delete texture;
 		return 0;
 	}
 
-	// Update descriptor set
 	VkDescriptorImageInfo image_desc_info{};
 	image_desc_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	image_desc_info.imageView = texture->view;
@@ -687,6 +722,90 @@ Rml::TextureHandle RenderInterface_VK::GenerateTexture (Rml::Span<const Rml::byt
 	write.pImageInfo = &image_desc_info;
 
 	vkUpdateDescriptorSets (m_config.device, 1, &write, 0, nullptr);
+
+	// Batched path: if inside a frame (BeginFrame was called), defer the upload.
+	// Immediate path: if outside a frame (e.g. during Initialize()), submit now.
+	// Image view and descriptor set are already created, so upload failures
+	// only lose pixel data — the texture object remains valid for cleanup.
+	const bool inside_frame = (m_current_cmd != VK_NULL_HANDLE);
+
+	if (inside_frame)
+	{
+		// Stage for batch upload — actual GPU copy happens in FlushPendingUploads()
+		m_staged_uploads.push_back ({texture->image, staging_buffer, staging_memory, source_dimensions});
+	}
+	else
+	{
+		// Legacy immediate submit — used during Initialize() for the white texture
+		VkCommandPoolCreateInfo pool_ci{};
+		pool_ci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		pool_ci.queueFamilyIndex = m_config.queue_family_index;
+		pool_ci.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+		VkCommandPool cmd_pool;
+		vkCreateCommandPool (m_config.device, &pool_ci, nullptr, &cmd_pool);
+
+		VkCommandBufferAllocateInfo cmd_alloc_info{};
+		cmd_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmd_alloc_info.commandPool = cmd_pool;
+		cmd_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		cmd_alloc_info.commandBufferCount = 1;
+
+		VkCommandBuffer cmd;
+		vkAllocateCommandBuffers (m_config.device, &cmd_alloc_info, &cmd);
+
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		vkBeginCommandBuffer (cmd, &begin_info);
+
+		ImageBarrier (
+			cmd, texture->image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+		VkBufferImageCopy region{};
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.layerCount = 1;
+		region.imageExtent = {static_cast<uint32_t> (source_dimensions.x), static_cast<uint32_t> (source_dimensions.y), 1};
+		vkCmdCopyBufferToImage (cmd, staging_buffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+		ImageBarrier (
+			cmd, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+		vkEndCommandBuffer (cmd);
+
+		VkFenceCreateInfo fence_ci{};
+		fence_ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		VkFence upload_fence;
+		if (vkCreateFence (m_config.device, &fence_ci, nullptr, &upload_fence) != VK_SUCCESS)
+		{
+			vkDestroyCommandPool (m_config.device, cmd_pool, nullptr);
+			DestroyTexture (texture);
+			m_image_pool.Free (texture->memory_alloc);
+			DestroyBuffer (staging_buffer, staging_memory);
+			delete texture;
+			return 0;
+		}
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &cmd;
+
+		if (vkQueueSubmit (m_config.graphics_queue, 1, &submit_info, upload_fence) != VK_SUCCESS)
+		{
+			vkDestroyFence (m_config.device, upload_fence, nullptr);
+			vkDestroyCommandPool (m_config.device, cmd_pool, nullptr);
+			DestroyTexture (texture);
+			m_image_pool.Free (texture->memory_alloc);
+			DestroyBuffer (staging_buffer, staging_memory);
+			delete texture;
+			return 0;
+		}
+
+		m_pending_uploads.push_back ({upload_fence, cmd_pool, staging_buffer, staging_memory});
+	}
 
 	Rml::TextureHandle handle = m_next_texture_handle++;
 	m_textures[handle] = texture;
@@ -739,6 +858,187 @@ void RenderInterface_VK::SetTransform (const Rml::Matrix4f *transform)
 		m_transform_enabled = false;
 	}
 }
+
+// ── Batch Upload (L3) ─────────────────────────────────────────────────────
+
+void RenderInterface_VK::FlushPendingUploads ()
+{
+	if (m_staged_uploads.empty ())
+		return;
+
+	// Wait for previous batch to complete and free its staging buffers
+	if (m_upload_fence_pending)
+	{
+		vkWaitForFences (m_config.device, 1, &m_upload_fence, VK_TRUE, UINT64_MAX);
+		FreePrevBatchStaging ();
+		m_upload_fence_pending = false;
+	}
+
+	vkResetFences (m_config.device, 1, &m_upload_fence);
+	vkResetCommandPool (m_config.device, m_upload_cmd_pool, 0);
+
+	VkCommandBufferAllocateInfo alloc_info{};
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.commandPool = m_upload_cmd_pool;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandBufferCount = 1;
+
+	VkCommandBuffer cmd;
+	if (vkAllocateCommandBuffers (m_config.device, &alloc_info, &cmd) != VK_SUCCESS)
+	{
+		Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkAllocateCommandBuffers failed");
+		goto flush_fail;
+	}
+
+	{
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		if (vkBeginCommandBuffer (cmd, &begin_info) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkBeginCommandBuffer failed");
+			goto flush_fail;
+		}
+
+		for (auto &staged : m_staged_uploads)
+		{
+			// Barrier: UNDEFINED → TRANSFER_DST_OPTIMAL
+			ImageBarrier (
+				cmd, staged.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+			VkBufferImageCopy region{};
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.layerCount = 1;
+			region.imageExtent = {static_cast<uint32_t> (staged.dimensions.x), static_cast<uint32_t> (staged.dimensions.y), 1};
+			vkCmdCopyBufferToImage (cmd, staged.staging_buffer, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+			// Barrier: TRANSFER_DST_OPTIMAL → SHADER_READ_ONLY_OPTIMAL
+			ImageBarrier (
+				cmd, staged.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		}
+
+		if (vkEndCommandBuffer (cmd) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkEndCommandBuffer failed");
+			goto flush_fail;
+		}
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &cmd;
+
+		if (vkQueueSubmit (m_config.graphics_queue, 1, &submit_info, m_upload_fence) != VK_SUCCESS)
+		{
+			Rml::Log::Message (Rml::Log::LT_ERROR, "FlushPendingUploads: vkQueueSubmit failed");
+			goto flush_fail;
+		}
+	}
+
+	// Move staging buffers to prev-batch for deferred cleanup
+	for (auto &staged : m_staged_uploads)
+		m_prev_batch_staging.emplace_back (staged.staging_buffer, staged.staging_memory);
+	m_staged_uploads.clear ();
+	m_upload_fence_pending = true;
+	return;
+
+flush_fail:
+	// On failure the fence was never signaled, so free staging buffers directly
+	// and do NOT set m_upload_fence_pending (would deadlock next frame).
+	// The images themselves are valid — they have memory, views, and descriptors
+	// (thanks to GenerateTexture reorder) but will lack pixel data until
+	// RmlUI regenerates them.
+	for (auto &staged : m_staged_uploads)
+		DestroyBuffer (staged.staging_buffer, staged.staging_memory);
+	m_staged_uploads.clear ();
+}
+
+void RenderInterface_VK::FreePrevBatchStaging ()
+{
+	for (auto &pair : m_prev_batch_staging)
+		DestroyBuffer (pair.first, pair.second);
+	m_prev_batch_staging.clear ();
+}
+
+// ── Sync2-Aware Barrier Helper (H1) ──────────────────────────────────────
+
+void RenderInterface_VK::ImageBarrier (
+	VkCommandBuffer cmd, VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, VkAccessFlags src_access, VkAccessFlags dst_access,
+	VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage)
+{
+	if (m_config.sync2_available && m_config.cmd_pipeline_barrier_2)
+	{
+		VkImageMemoryBarrier2KHR barrier2{};
+		barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
+		barrier2.srcStageMask = static_cast<VkPipelineStageFlags2KHR> (src_stage);
+		barrier2.srcAccessMask = static_cast<VkAccessFlags2KHR> (src_access);
+		barrier2.dstStageMask = static_cast<VkPipelineStageFlags2KHR> (dst_stage);
+		barrier2.dstAccessMask = static_cast<VkAccessFlags2KHR> (dst_access);
+		barrier2.oldLayout = old_layout;
+		barrier2.newLayout = new_layout;
+		barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier2.image = image;
+		barrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier2.subresourceRange.levelCount = 1;
+		barrier2.subresourceRange.layerCount = 1;
+
+		VkDependencyInfoKHR dep_info{};
+		dep_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+		dep_info.imageMemoryBarrierCount = 1;
+		dep_info.pImageMemoryBarriers = &barrier2;
+
+		m_config.cmd_pipeline_barrier_2 (cmd, &dep_info);
+	}
+	else
+	{
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = old_layout;
+		barrier.newLayout = new_layout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = src_access;
+		barrier.dstAccessMask = dst_access;
+
+		vkCmdPipelineBarrier (cmd, src_stage, dst_stage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	}
+}
+
+// ── GPU Timestamp Instrumentation (L4) ────────────────────────────────────
+
+void RenderInterface_VK::WriteBeginTimestamp (VkCommandBuffer primary_cb)
+{
+	if (!m_timestamps_supported || primary_cb == VK_NULL_HANDLE)
+		return;
+	uint32_t base = static_cast<uint32_t> (m_timestamp_frame_index * 2);
+	vkCmdResetQueryPool (primary_cb, m_timestamp_query_pool, base, 2);
+	vkCmdWriteTimestamp (primary_cb, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_timestamp_query_pool, base);
+}
+
+void RenderInterface_VK::WriteEndTimestamp (VkCommandBuffer primary_cb)
+{
+	if (!m_timestamps_supported || primary_cb == VK_NULL_HANDLE)
+		return;
+	uint32_t base = static_cast<uint32_t> (m_timestamp_frame_index * 2);
+	vkCmdWriteTimestamp (primary_cb, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_timestamp_query_pool, base + 1);
+	m_timestamp_frame_index = 1 - m_timestamp_frame_index;
+}
+
+double RenderInterface_VK::GetLastFrameGpuTimeMs () const
+{
+	return m_last_gpu_time_ms;
+}
+
+// ── Pipeline Creation Dual Path (H2) ─────────────────────────────────────
 
 bool RenderInterface_VK::CreateDescriptorSetLayout ()
 {
@@ -834,25 +1134,12 @@ bool RenderInterface_VK::CreatePipeline ()
 	if (vkCreateShaderModule (m_config.device, &frag_info, nullptr, &frag_module) != VK_SUCCESS)
 	{
 		vkDestroyShaderModule (m_config.device, vert_module, nullptr);
-		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create textured fragment shader module");
+		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create fragment shader module");
 		return false;
 	}
 
-	VkShaderModuleCreateInfo frag_notex_info{};
-	frag_notex_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	frag_notex_info.codeSize = rmlui_notex_frag_spv_len;
-	frag_notex_info.pCode = reinterpret_cast<const uint32_t *> (rmlui_notex_frag_spv);
-
-	VkShaderModule frag_notex_module;
-	if (vkCreateShaderModule (m_config.device, &frag_notex_info, nullptr, &frag_notex_module) != VK_SUCCESS)
-	{
-		vkDestroyShaderModule (m_config.device, vert_module, nullptr);
-		vkDestroyShaderModule (m_config.device, frag_module, nullptr);
-		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create untextured fragment shader module");
-		return false;
-	}
-
-	// Shader stage info
+	// Only the textured pipeline is created. All geometry uses the white-texture
+	// fallback for untextured draws, so a separate untextured pipeline is unnecessary.
 	VkPipelineShaderStageCreateInfo vert_stage{};
 	vert_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vert_stage.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -865,14 +1152,7 @@ bool RenderInterface_VK::CreatePipeline ()
 	frag_stage.module = frag_module;
 	frag_stage.pName = "main";
 
-	VkPipelineShaderStageCreateInfo frag_notex_stage{};
-	frag_notex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	frag_notex_stage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	frag_notex_stage.module = frag_notex_module;
-	frag_notex_stage.pName = "main";
-
-	VkPipelineShaderStageCreateInfo stages_textured[] = {vert_stage, frag_stage};
-	VkPipelineShaderStageCreateInfo stages_untextured[] = {vert_stage, frag_notex_stage};
+	VkPipelineShaderStageCreateInfo stages[] = {vert_stage, frag_stage};
 
 	// Vertex input - RmlUI vertex format: position (vec2), color (u8vec4), texcoord (vec2)
 	VkVertexInputBindingDescription binding{};
@@ -964,7 +1244,7 @@ bool RenderInterface_VK::CreatePipeline ()
 	VkGraphicsPipelineCreateInfo pipeline_info{};
 	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipeline_info.stageCount = 2;
-	pipeline_info.pStages = stages_textured;
+	pipeline_info.pStages = stages;
 	pipeline_info.pVertexInputState = &vertex_input;
 	pipeline_info.pInputAssemblyState = &input_assembly;
 	pipeline_info.pViewportState = &viewport_state;
@@ -974,36 +1254,34 @@ bool RenderInterface_VK::CreatePipeline ()
 	pipeline_info.pColorBlendState = &color_blend;
 	pipeline_info.pDynamicState = &dynamic_state;
 	pipeline_info.layout = m_pipeline_layout;
-	pipeline_info.renderPass = m_config.render_pass;
-	pipeline_info.subpass = m_config.subpass;
+
+	// H2: Dynamic rendering path — pipeline is render-pass-independent
+	VkPipelineRenderingCreateInfoKHR rendering_ci{};
+	if (m_config.dynamic_rendering)
+	{
+		rendering_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+		rendering_ci.colorAttachmentCount = 1;
+		rendering_ci.pColorAttachmentFormats = &m_config.color_format;
+		pipeline_info.pNext = &rendering_ci;
+		pipeline_info.renderPass = VK_NULL_HANDLE;
+	}
+	else
+	{
+		pipeline_info.renderPass = m_config.render_pass;
+		pipeline_info.subpass = m_config.subpass;
+	}
 
 	if (vkCreateGraphicsPipelines (m_config.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &m_pipeline_textured) != VK_SUCCESS)
 	{
 		vkDestroyShaderModule (m_config.device, vert_module, nullptr);
 		vkDestroyShaderModule (m_config.device, frag_module, nullptr);
-		vkDestroyShaderModule (m_config.device, frag_notex_module, nullptr);
-		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create textured pipeline");
-		return false;
-	}
-
-	// Create untextured pipeline
-	pipeline_info.pStages = stages_untextured;
-
-	if (vkCreateGraphicsPipelines (m_config.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &m_pipeline_untextured) != VK_SUCCESS)
-	{
-		vkDestroyShaderModule (m_config.device, vert_module, nullptr);
-		vkDestroyShaderModule (m_config.device, frag_module, nullptr);
-		vkDestroyShaderModule (m_config.device, frag_notex_module, nullptr);
-		vkDestroyPipeline (m_config.device, m_pipeline_textured, nullptr);
-		m_pipeline_textured = VK_NULL_HANDLE;
-		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create untextured pipeline");
+		Rml::Log::Message (Rml::Log::LT_ERROR, "Failed to create pipeline");
 		return false;
 	}
 
 	// Clean up shader modules (no longer needed after pipeline creation)
 	vkDestroyShaderModule (m_config.device, vert_module, nullptr);
 	vkDestroyShaderModule (m_config.device, frag_module, nullptr);
-	vkDestroyShaderModule (m_config.device, frag_notex_module, nullptr);
 
 	return true;
 }

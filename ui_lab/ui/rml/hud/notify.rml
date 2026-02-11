@@ -2,15 +2,9 @@
 <head>
     <title>Notify</title>
     <link type="text/rcss" href="../../rcss/base.rcss"/>
-    <link type="text/rcss" href="../../rcss/lab_notify.rcss"/>
 </head>
+<!-- Lab HUD embeds notify lines directly in hud.rml's left column.
+     Override this file to use a standalone notify document instead. -->
 <body data-model="game" class="hud-overlay">
-    <div class="visor-notify">
-        <span class="sys-label notify-header">SYS::MSG</span>
-        <div class="notify-line" data-if="notify_0_visible" data-class-fading="notify_0_fading">{{ notify_0 }}</div>
-        <div class="notify-line" data-if="notify_1_visible" data-class-fading="notify_1_fading">{{ notify_1 }}</div>
-        <div class="notify-line" data-if="notify_2_visible" data-class-fading="notify_2_fading">{{ notify_2 }}</div>
-        <div class="notify-line" data-if="notify_3_visible" data-class-fading="notify_3_fading">{{ notify_3 }}</div>
-    </div>
 </body>
 </rml>

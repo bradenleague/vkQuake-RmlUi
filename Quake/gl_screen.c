@@ -1307,9 +1307,11 @@ static void SCR_DrawGUI (void *unused)
 			static double	   sum_render = 0.0;
 			static double	   sum_end = 0.0;
 			static double	   sum_total = 0.0;
+			static double	   sum_gpu = 0.0;
 			static double	   sum_draw_calls = 0.0;
 			static double	   sum_triangles = 0.0;
 			static double	   worst_total = 0.0;
+			static double	   worst_gpu = 0.0;
 			static double	   worst_update = 0.0;
 			static double	   worst_update_dp = 0.0;
 			static double	   worst_update_model = 0.0;
@@ -1342,10 +1344,13 @@ static void SCR_DrawGUI (void *unused)
 			sum_render += stats.render_ms;
 			sum_end += stats.end_ms;
 			sum_total += stats.total_ms;
+			sum_gpu += stats.gpu_ms;
 			sum_draw_calls += stats.draw_calls;
 			sum_triangles += stats.triangles;
 			if (stats.total_ms > worst_total)
 				worst_total = stats.total_ms;
+			if (stats.gpu_ms > worst_gpu)
+				worst_gpu = stats.gpu_ms;
 			if (stats.update_ms > worst_update)
 			{
 				worst_update = stats.update_ms;
@@ -1400,10 +1405,11 @@ static void SCR_DrawGUI (void *unused)
 			{
 				double inv = frame_count > 0 ? 1.0 / frame_count : 0.0;
 				Con_Printf (
-					"ui(avg1s) %5.2f ms total (begin %4.2f update %4.2f render %4.2f end %4.2f) worst %5.2f ms (update %4.2f render %4.2f, culprit %s %.2f) dc "
+					"ui(avg1s) %5.2f ms total (begin %4.2f update %4.2f render %4.2f end %4.2f gpu %4.2f/%4.2f) worst %5.2f ms (update %4.2f render %4.2f, "
+					"culprit %s %.2f) dc "
 					"%.1f/%d tri %.1f/%d\n",
-					sum_total * inv, sum_begin * inv, sum_update * inv, sum_render * inv, sum_end * inv, worst_total, worst_update, worst_render,
-					worst_update_culprit, worst_update_culprit_ms, sum_draw_calls * inv, max_draw_calls, sum_triangles * inv, max_triangles);
+					sum_total * inv, sum_begin * inv, sum_update * inv, sum_render * inv, sum_end * inv, sum_gpu * inv, worst_gpu, worst_total, worst_update,
+					worst_render, worst_update_culprit, worst_update_culprit_ms, sum_draw_calls * inv, max_draw_calls, sum_triangles * inv, max_triangles);
 
 				if (ui_speeds.value >= 3)
 				{
@@ -1427,9 +1433,11 @@ static void SCR_DrawGUI (void *unused)
 				sum_render = 0.0;
 				sum_end = 0.0;
 				sum_total = 0.0;
+				sum_gpu = 0.0;
 				sum_draw_calls = 0.0;
 				sum_triangles = 0.0;
 				worst_total = 0.0;
+				worst_gpu = 0.0;
 				worst_update = 0.0;
 				worst_update_dp = 0.0;
 				worst_update_model = 0.0;
@@ -1448,8 +1456,8 @@ static void SCR_DrawGUI (void *unused)
 		else
 		{
 			Con_Printf (
-				"ui %5.2f ms (begin %4.2f update %4.2f render %4.2f end %4.2f) dc %d tri %d\n", stats.total_ms, stats.begin_ms, stats.update_ms,
-				stats.render_ms, stats.end_ms, stats.draw_calls, stats.triangles);
+				"ui %5.2f ms (begin %4.2f update %4.2f render %4.2f end %4.2f gpu %4.2f) dc %d tri %d\n", stats.total_ms, stats.begin_ms, stats.update_ms,
+				stats.render_ms, stats.end_ms, stats.gpu_ms, stats.draw_calls, stats.triangles);
 		}
 	}
 	R_EndDebugUtilsLabel (cbx);

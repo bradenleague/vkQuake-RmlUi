@@ -19,12 +19,6 @@
     width: 500dp;
 }
 
-.notify-standalone {
-    position: absolute;
-    top: 140dp;
-    left: 48dp;
-}
-
 .notify-line {
     font-family: Space Grotesk;
     font-size: 1.0rem;

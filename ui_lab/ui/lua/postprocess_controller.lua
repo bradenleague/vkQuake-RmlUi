@@ -25,6 +25,8 @@ PostProcess.prev_flash = false
 -- Effect timers (engine time when effect started, nil = inactive)
 PostProcess.damage_time = nil
 PostProcess.fire_time   = nil
+PostProcess.quad_expire_time = nil
+PostProcess.prev_quad   = false
 PostProcess.face_pain_rearm_frames = 0
 
 -- Last values written to cvars (dirty tracking)
@@ -35,6 +37,7 @@ PostProcess.last_echo      = nil
 -- Effect durations (seconds)
 PostProcess.DAMAGE_DURATION = 0.4
 PostProcess.FIRE_DURATION   = 0.15
+PostProcess.QUAD_FADE_DURATION = 0.4
 
 -- Effect intensities
 PostProcess.DAMAGE_WARP     = -0.15
@@ -168,10 +171,24 @@ function PostProcess.Think ()
 		end
 	end
 
-	-- Quad damage: continuous sine pulse on chromatic
+	-- Quad damage: continuous sine pulse on chromatic, with fade-out on expiry
 	if g.has_quad then
 		local pulse = (math.sin (now * 6.0) + 1.0) * 0.5  -- 0..1 at ~1Hz
 		chromatic_delta = chromatic_delta + PostProcess.QUAD_CHROMATIC * pulse
+		PostProcess.quad_expire_time = nil
+	elseif PostProcess.prev_quad then
+		-- Quad just expired — start fade-out
+		PostProcess.quad_expire_time = now
+	end
+	PostProcess.prev_quad = g.has_quad
+
+	if PostProcess.quad_expire_time then
+		local intensity = lerp_decay (PostProcess.quad_expire_time, PostProcess.QUAD_FADE_DURATION, now)
+		if intensity > 0 then
+			chromatic_delta = chromatic_delta + PostProcess.QUAD_CHROMATIC * intensity
+		else
+			PostProcess.quad_expire_time = nil
+		end
 	end
 
 	-- Low health: continuous warp scaling linearly below 25 hp

@@ -147,6 +147,10 @@ extern "C"
 		VkRenderPass					 render_pass;
 		uint32_t						 subpass;
 		VkPhysicalDeviceMemoryProperties memory_properties;
+		uint32_t						 timestamp_valid_bits;
+		int								 sync2_available;
+		PFN_vkCmdPipelineBarrier2KHR	 cmd_pipeline_barrier_2;
+		int								 dynamic_rendering;
 		PFN_vkCmdBindPipeline			 cmd_bind_pipeline;
 		PFN_vkCmdBindDescriptorSets		 cmd_bind_descriptor_sets;
 		PFN_vkCmdBindVertexBuffers		 cmd_bind_vertex_buffers;
@@ -162,6 +166,10 @@ extern "C"
 	/* Frame rendering hooks - called by vkQuake's render loop */
 	void UI_BeginFrame (void *cmd, int width, int height);
 	void UI_EndFrame (void);
+
+	/* GPU timestamp instrumentation — called on primary CB around UI render pass */
+	void UI_WriteBeginTimestamp (void *cmd);
+	void UI_WriteEndTimestamp (void *cmd);
 
 	/* Garbage collection - call after GPU fence wait to safely destroy resources */
 	void UI_CollectGarbage (void);
@@ -181,6 +189,7 @@ extern "C"
 		double render_ms;
 		double end_ms;
 		double total_ms;
+		double gpu_ms;
 		int	   draw_calls;
 		int	   indices;
 		int	   triangles;

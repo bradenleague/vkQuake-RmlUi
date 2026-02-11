@@ -21,9 +21,9 @@
                         <!-- Interface Scale -->
                         <div class="option-row">
                             <span class="option-label">Interface Scale</span>
-                            <input type="range" class="range" min="1" max="4" step="0.5"
+                            <input type="range" class="range" min="0.5" max="1.5" step="0.25"
                                    data-value="ui_scale"
-                                   onchange="cvar_changed('ui_scale')" />
+                                   data-event-change="cvar_changed('ui_scale')" />
                         </div>
 
                         <!-- Font Scale -->
@@ -31,7 +31,7 @@
                             <span class="option-label">Font Scale</span>
                             <input type="range" class="range" min="0.75" max="2" step="0.05"
                                    data-value="font_scale"
-                                   onchange="cvar_changed('font_scale')" />
+                                   data-event-change="cvar_changed('font_scale')" />
                         </div>
 
                         <!-- HUD Opacity -->
@@ -39,7 +39,7 @@
                             <span class="option-label">HUD Opacity</span>
                             <input type="range" class="range" min="0" max="1" step="0.1"
                                    data-value="hud_opacity"
-                                   onchange="cvar_changed('hud_opacity')" />
+                                   data-event-change="cvar_changed('hud_opacity')" />
                         </div>
 
                         <!-- Crosshair -->
@@ -62,7 +62,7 @@
                             <span class="option-label">Mouse Speed</span>
                             <input type="range" class="range" min="1" max="20" step="0.5"
                                    data-value="sensitivity"
-                                   onchange="cvar_changed('sensitivity')" />
+                                   data-event-change="cvar_changed('sensitivity')" />
                         </div>
 
                         <!-- Invert Mouse -->
@@ -99,7 +99,7 @@
                             <span class="option-label">View Bob</span>
                             <input type="range" class="range" min="0" max="0.04" step="0.004"
                                    data-value="view_bob"
-                                   onchange="cvar_changed('view_bob')" />
+                                   data-event-change="cvar_changed('view_bob')" />
                         </div>
 
                         <!-- View Roll -->
@@ -107,7 +107,7 @@
                             <span class="option-label">View Roll</span>
                             <input type="range" class="range" min="0" max="4" step="0.5"
                                    data-value="view_roll"
-                                   onchange="cvar_changed('view_roll')" />
+                                   data-event-change="cvar_changed('view_roll')" />
                         </div>
 
                         <!-- Gun Kick -->

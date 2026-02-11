@@ -3,9 +3,12 @@ id1/
 
 # Mod directories (cloned or dropped in at project root)
 # Standard Quake convention — each mod is its own directory
-tatoosh/
 rm1.2/
 demo/
+demo2/
+demo3/
+demo4/
+ui_forge
 
 # Local-only docs
 docs/Demo_doc.md
@@ -114,3 +117,4 @@ helgrind.log
 
 # Test output
 test_results/
+test

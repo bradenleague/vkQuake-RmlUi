@@ -19,14 +19,14 @@
                         <span class="option-label">Name</span>
                         <input type="text" class="text"
                                data-value="player_name"
-                               onchange="cvar_changed('player_name')" />
+                               data-event-change="cvar_changed('player_name')" />
                     </div>
 
                     <div class="option-row">
                         <span class="option-label">Hostname</span>
                         <input type="text" class="text"
                                data-value="hostname"
-                               onchange="cvar_changed('hostname')" />
+                               data-event-change="cvar_changed('hostname')" />
                     </div>
 
                     <div class="section-divider"></div>

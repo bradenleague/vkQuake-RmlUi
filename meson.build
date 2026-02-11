@@ -361,7 +361,6 @@ if use_rmlui
     shaders += [
         'Shaders/rmlui.vert',
         'Shaders/rmlui.frag',
-        'Shaders/rmlui_notex.frag',
     ]
 
     # RmlUI include directories

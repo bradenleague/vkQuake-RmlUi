@@ -267,6 +267,8 @@ typedef struct
 	qboolean dedicated_allocation;
 	qboolean full_screen_exclusive;
 	qboolean ray_query;
+	qboolean synchronization_2;
+	qboolean dynamic_rendering;
 
 	// Buffers
 	VkImage color_buffers[NUM_COLOR_BUFFERS];
@@ -370,6 +372,13 @@ typedef struct
 	PFN_vkCmdCopyBufferToImage		vk_cmd_copy_buffer_to_image;
 	PFN_vkCmdDispatch				vk_cmd_dispatch;
 	PFN_vkGetBufferDeviceAddressKHR vk_get_buffer_device_address;
+
+	// VK_KHR_synchronization2 (H1)
+	PFN_vkCmdPipelineBarrier2KHR vk_cmd_pipeline_barrier_2;
+
+	// VK_KHR_dynamic_rendering (H2)
+	PFN_vkCmdBeginRenderingKHR vk_cmd_begin_rendering;
+	PFN_vkCmdEndRenderingKHR   vk_cmd_end_rendering;
 
 	PFN_vkGetAccelerationStructureBuildSizesKHR		   vk_get_acceleration_structure_build_sizes;
 	PFN_vkCreateAccelerationStructureKHR			   vk_create_acceleration_structure;
