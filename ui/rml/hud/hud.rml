@@ -149,12 +149,11 @@
         <!-- Dot (style 2) -->
         <reticle data-if="reticle_style == 2">
             <reticle-dot />
-            <reticle-ring />
         </reticle>
         <!-- Circle (style 3) -->
         <reticle data-if="reticle_style == 3">
-            <reticle-ring class="outer" />
-            <reticle-ring class="inner" />
+            <reticle-ring />
+            <reticle-dot />
         </reticle>
         <!-- Chevron (style 4) -->
         <reticle data-if="reticle_style == 4">

@@ -109,10 +109,9 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 }
 
 /* Default shape parameters */
-.crosshair reticle-dot { reticle-radius: 2dp; }
+.crosshair reticle-dot { reticle-radius: 3dp; }
 .crosshair reticle-line { reticle-length: 8dp; reticle-width: 2dp; reticle-gap: 4dp; }
-.crosshair reticle-ring { reticle-radius: 10dp; reticle-stroke: 1.5dp; }
-.crosshair reticle-ring.inner { reticle-radius: 5dp; }
+.crosshair reticle-ring { reticle-radius: 14dp; reticle-stroke: 2dp; }
 .crosshair reticle-arc.upper { reticle-start-angle: 220; reticle-end-angle: 320; reticle-radius: 10dp; reticle-stroke: 2dp; }
 .crosshair reticle-arc.lower { reticle-start-angle: 40; reticle-end-angle: 140; reticle-radius: 10dp; reticle-stroke: 2dp; }
 
@@ -123,11 +122,11 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 /* Fire animation: expand outward (data-class binding toggles .firing) */
 .crosshair.firing reticle-line { reticle-gap: 7dp; }
-.crosshair.firing reticle-ring { reticle-radius: 14dp; }
+.crosshair.firing reticle-ring { reticle-radius: 18dp; }
 
 /* Equip animation: collapse then restore */
 .crosshair.equipping reticle-line { reticle-gap: 1dp; reticle-length: 3dp; }
-.crosshair.equipping reticle-ring { reticle-radius: 3dp; }
+.crosshair.equipping reticle-ring { reticle-radius: 4dp; }
 
 /* ============================================
    Level Stats
