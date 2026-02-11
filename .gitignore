@@ -8,6 +8,7 @@ demo/
 demo2/
 demo3/
 demo4/
+ui_forge
 
 # Local-only docs
 docs/Demo_doc.md
@@ -116,3 +117,4 @@ helgrind.log
 
 # Test output
 test_results/
+test
