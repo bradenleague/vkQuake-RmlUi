@@ -3,11 +3,11 @@ id1/
 
 # Mod directories (cloned or dropped in at project root)
 # Standard Quake convention — each mod is its own directory
-rm1.2/
-demo/
-demo2/
-demo3/
-demo4/
+rm1.2
+demo
+demo2
+demo3
+demo4
 ui_forge
 
 # Local-only docs
