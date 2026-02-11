@@ -109,10 +109,13 @@ Format: `<name>-in` | `<name>-out` | `<name>-in-out`
 | `bounce` | Bounces at endpoint |
 | `elastic` | Spring-like oscillation |
 
+**Important:** In `transition:` declarations, you MUST use the full `<name>-<direction>` form (e.g. `linear-in-out`). Bare `linear` causes a parse error. In `animation:` declarations, bare `linear` is accepted as a shorthand. When in doubt, omit the tween entirely — the default for both is `linear-in-out`.
+
 Common picks:
 - Menus: `quadratic-out` or `cubic-out` (snappy open), `quadratic-in` (close)
 - HUD pulses: `sine-in-out` (smooth loop), `elastic-out` (punchy one-shot)
 - Hover effects: `back-out` (subtle overshoot)
+- Snappy/instant feel: omit tween (defaults to `linear-in-out`)
 
 ## Transforms
 
