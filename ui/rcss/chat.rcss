@@ -31,7 +31,7 @@
 
 .chat-prefix {
     font-family: Space Grotesk;
-    font-size: 16dp;
+    font-size: 1.0rem;
     font-weight: bold;
     color: #ccaa44;
     letter-spacing: 1dp;
@@ -40,7 +40,7 @@
 
 .chat-text {
     font-family: Space Grotesk;
-    font-size: 16dp;
+    font-size: 1.0rem;
     color: #dddddd;
     font-effect: outline(1dp #000000);
 }

@@ -136,7 +136,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
     display: flex;
     flex-direction: column;
     gap: 6dp;
-    font-size: 14dp;
+    font-size: 0.889rem;
 }
 
 .level-stat {
@@ -198,7 +198,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .corner-stat .label {
     font-family: Space Grotesk;
-    font-size: 12dp;
+    font-size: 0.778rem;
     color: #666666;
     text-transform: uppercase;
     letter-spacing: 1dp;
@@ -272,7 +272,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .weapon-label {
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.889rem;
     color: #666666;
     text-transform: uppercase;
     letter-spacing: 2dp;
@@ -307,7 +307,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .reserve .reserve-label {
     font-family: Space Grotesk;
-    font-size: 10dp;
+    font-size: 0.667rem;
     color: #555555;
     text-transform: uppercase;
     letter-spacing: 1dp;
@@ -319,7 +319,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .reserve .reserve-value {
     font-family: Space Grotesk;
-    font-size: 18dp;
+    font-size: 1.0rem;
     font-weight: bold;
     color: #666666;
     font-effect: outline(1dp #000000);
@@ -395,7 +395,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .powerup-badge .powerup-name {
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.889rem;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1dp;
@@ -468,7 +468,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .weapon-num {
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.889rem;
     font-weight: bold;
     color: #555555;
 }
@@ -483,7 +483,7 @@ reticle-dot, reticle-line, reticle-ring, reticle-arc {
 
 .weapon-name {
     font-family: Space Grotesk;
-    font-size: 9dp;
+    font-size: 0.667rem;
     color: #333333;
     text-transform: uppercase;
     letter-spacing: 1dp;

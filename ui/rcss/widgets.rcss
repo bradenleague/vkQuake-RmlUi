@@ -17,7 +17,7 @@ button, .btn {
     padding: 10dp 20dp;
     color: #ffffff;
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.778rem;
     font-weight: bold;
     text-align: center;
     text-transform: uppercase;
@@ -100,7 +100,7 @@ input.text, textarea, .input {
     border-bottom: 2dp #333333;
     padding: 10dp 4dp;
     color: #ffffff;
-    font-size: 16dp;
+    font-size: 0.889rem;
     font-family: LatoLatin;
     tab-index: auto;
     nav: vertical;
@@ -217,7 +217,7 @@ input.range sliderarrowinc {
     background-color: #111111;
     border: 2dp #ffffff;
     padding: 8dp 12dp;
-    font-size: 14dp;
+    font-size: 0.778rem;
     color: #ffffff;
     max-width: 250dp;
     pointer-events: none;
@@ -235,19 +235,19 @@ input.range sliderarrowinc {
 
 .form-label {
     display: block;
-    font-size: 14dp;
+    font-size: 0.778rem;
     color: #666666;
     margin-bottom: 6dp;
 }
 
 .form-hint {
-    font-size: 12dp;
+    font-size: 0.667rem;
     color: #666666;
     margin-top: 4dp;
 }
 
 .form-error {
-    font-size: 12dp;
+    font-size: 0.667rem;
     color: #ff3333;
     margin-top: 4dp;
 }

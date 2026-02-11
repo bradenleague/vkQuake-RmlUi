@@ -101,7 +101,7 @@
     padding: 14dp 20dp;
     color: #ffffff;
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.778rem;
     font-weight: bold;
     text-align: left;
     text-transform: uppercase;
@@ -140,7 +140,7 @@
 /* Primary menu item */
 .menu-item.primary {
     color: #8b0000;
-    font-size: 15dp;
+    font-size: 0.833rem;
 }
 
 .menu-item.primary:hover,
@@ -169,7 +169,7 @@
 /* Secondary menu item */
 .menu-item.secondary {
     color: #666666;
-    font-size: 13dp;
+    font-size: 0.722rem;
     padding: 10dp 20dp;
 }
 
@@ -204,7 +204,7 @@
 .option-label {
     flex: 0 0 220dp;
     color: #ffffff;
-    font-size: 16dp;
+    font-size: 0.889rem;
 }
 
 .option-row input.range {
@@ -222,7 +222,7 @@
 
 .option-value {
     color: #8b0000;
-    font-size: 16dp;
+    font-size: 0.889rem;
     min-width: 120dp;
     text-align: right;
 }
@@ -254,7 +254,7 @@
 
 .section-header {
     font-family: Space Grotesk;
-    font-size: 18dp;
+    font-size: 1.0rem;
     font-weight: bold;
     color: #8b0000;
     text-transform: uppercase;
@@ -274,8 +274,12 @@
     text-align: center;
 }
 
+.dialog h2 {
+    margin-bottom: 24dp;
+}
+
 .dialog-message {
-    font-size: 18dp;
+    font-size: 1.0rem;
     color: #ffffff;
     margin-bottom: 24dp;
     line-height: 1.5;
@@ -336,14 +340,14 @@
 
 .keybind-action {
     color: #ffffff;
-    font-size: 15dp;
+    font-size: 0.833rem;
     flex: 1 1 auto;
     min-width: 0;
 }
 
 .keybind-key {
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.778rem;
     font-weight: bold;
     color: #8b0000;
     background-color: transparent;
@@ -395,13 +399,13 @@
 }
 
 .save-slot-name {
-    font-size: 16dp;
+    font-size: 0.889rem;
     color: #ffffff;
     margin-bottom: 4dp;
 }
 
 .save-slot-details {
-    font-size: 12dp;
+    font-size: 0.667rem;
     color: #666666;
 }
 
@@ -425,7 +429,7 @@
 .mode-option {
     padding: 8dp 12dp;
     color: #999999;
-    font-size: 14dp;
+    font-size: 0.778rem;
     cursor: pointer;
     border-bottom: 1dp #1a1a1a;
     tab-index: auto;
@@ -454,7 +458,7 @@
     top: 24dp;
     left: 24dp;
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 0.778rem;
     font-weight: bold;
     padding: 8dp 16dp;
     background-color: transparent;
@@ -482,6 +486,14 @@
     padding-right: 8dp;
     width: 100%;
     display: block;
+}
+
+.scroll-area-tall {
+    max-height: 450dp;
+}
+
+.scroll-area-short {
+    max-height: 250dp;
 }
 
 /* Scrollbar — flat, minimal (shared by scroll-area and menu-container) */
@@ -523,14 +535,14 @@
 }
 
 .menu-subtitle {
-    font-size: 14dp;
+    font-size: 0.778rem;
     color: #666666;
     letter-spacing: 2dp;
     text-transform: uppercase;
 }
 
 .menu-version {
-    font-size: 11dp;
+    font-size: 0.611rem;
     color: #444444;
 }
 

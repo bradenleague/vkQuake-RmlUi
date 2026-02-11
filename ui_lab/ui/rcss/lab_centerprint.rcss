@@ -21,7 +21,7 @@
 
 .sys-label {
     font-family: Space Mono;
-    font-size: 11dp;
+    font-size: 0.667rem;
     text-transform: uppercase;
     letter-spacing: 1dp;
     color: #5a8a5a;
@@ -50,13 +50,13 @@
 }
 
 .centerprint-tag {
-    font-size: 9dp;
+    font-size: 0.667rem;
     color: #3a6b3a;
     letter-spacing: 2dp;
 }
 
 .visor-centerprint-text {
     font-family: Space Grotesk;
-    font-size: 22dp;
+    font-size: 1.222rem;
     color: #c8e6c8;
 }

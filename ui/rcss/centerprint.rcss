@@ -42,7 +42,7 @@
 
 .centerprint-text {
     font-family: Space Grotesk;
-    font-size: 28dp;
+    font-size: 1.556rem;
     font-weight: bold;
     line-height: 1.8;
     color: #ffffff;

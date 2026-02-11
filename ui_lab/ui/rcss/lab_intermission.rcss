@@ -7,7 +7,7 @@
 
 .sys-label {
     font-family: Space Mono;
-    font-size: 11dp;
+    font-size: 0.667rem;
     text-transform: uppercase;
     letter-spacing: 1dp;
     color: #5a8a5a;
@@ -48,7 +48,7 @@
 }
 
 .intermission-header .sys-label {
-    font-size: 12dp;
+    font-size: 0.667rem;
     letter-spacing: 3dp;
     color: #4aaa4a;
 }
@@ -87,7 +87,7 @@
 }
 
 .intermission-continue .sys-label {
-    font-size: 12dp;
+    font-size: 0.667rem;
     letter-spacing: 3dp;
     color: #5a8a5a;
 }
@@ -110,7 +110,7 @@
 
 .finale-text {
     font-family: Space Grotesk;
-    font-size: 20dp;
+    font-size: 1.111rem;
     color: #c8e6c8;
     text-align: center;
     max-width: 600dp;

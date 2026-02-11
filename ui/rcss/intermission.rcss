@@ -57,7 +57,7 @@
 
 .intermission-continue {
     margin-top: 64dp;
-    font-size: 20dp;
+    font-size: 1.111rem;
     color: #999999;
     text-transform: uppercase;
     letter-spacing: 4dp;
@@ -81,7 +81,7 @@
 }
 
 .finale-text {
-    font-size: 20dp;
+    font-size: 1.111rem;
     color: #ffffff;
     text-align: center;
     max-width: 600dp;

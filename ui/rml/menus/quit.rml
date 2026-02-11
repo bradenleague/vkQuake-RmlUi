@@ -10,7 +10,7 @@
     <div class="menu-overlay">
         <div class="menu-container narrow">
             <div class="panel dialog">
-                <h2 style="margin-bottom: 24dp;">Quit Game?</h2>
+                <h2>Quit Game?</h2>
 
                 <p class="dialog-message">
                     Are you sure you want to quit?

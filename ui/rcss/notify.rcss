@@ -27,7 +27,7 @@
 
 .notify-line {
     font-family: Space Grotesk;
-    font-size: 18dp;
+    font-size: 1.0rem;
     color: #cccccc;
     padding: 6dp 12dp;
     margin-bottom: 3dp;

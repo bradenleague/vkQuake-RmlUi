@@ -45,7 +45,7 @@
 /* Tagline */
 #tagline {
     font-family: LatoLatin;
-    font-size: 11dp;
+    font-size: 0.778rem;
     color: #666666;
     letter-spacing: 2dp;
     text-transform: uppercase;
@@ -77,7 +77,7 @@
     border: 2dp #333333;
     color: #ffffff;
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 1.0rem;
     font-weight: bold;
     letter-spacing: 2dp;
     text-transform: uppercase;
@@ -115,7 +115,7 @@
     border: 2dp #8b0000;
     color: #000000;
     font-family: Space Grotesk;
-    font-size: 14dp;
+    font-size: 1.0rem;
     font-weight: bold;
     letter-spacing: 2dp;
     text-transform: uppercase;
@@ -153,7 +153,7 @@
     border: 2dp #333333;
     color: #666666;
     font-family: Space Grotesk;
-    font-size: 11dp;
+    font-size: 0.778rem;
     font-weight: bold;
     letter-spacing: 2dp;
     text-transform: uppercase;
@@ -173,7 +173,7 @@
 
 /* Version text */
 #version {
-    font-size: 9dp;
+    font-size: 0.667rem;
     color: #444444;
     margin-top: 0;
     margin-bottom: 0;

@@ -16,7 +16,7 @@
 
                 <!-- Resolution list -->
                 <div class="section-header">Resolution</div>
-                <div class="scroll-area" style="max-height: 250dp;">
+                <div class="scroll-area scroll-area-short">
                     <div data-for="mode : video_modes">
                         <div class="mode-option"
                              data-class-active="mode.is_current"

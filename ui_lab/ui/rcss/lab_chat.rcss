@@ -7,7 +7,7 @@
 
 .sys-label {
     font-family: Space Mono;
-    font-size: 11dp;
+    font-size: 0.667rem;
     text-transform: uppercase;
     letter-spacing: 1dp;
     color: #5a8a5a;
@@ -32,12 +32,12 @@
 
 .chat-prefix {
     font-family: Space Mono;
-    font-size: 16dp;
+    font-size: 1.0rem;
     color: #5a8a5a;
 }
 
 .chat-text {
     font-family: Space Mono;
-    font-size: 16dp;
+    font-size: 1.0rem;
     color: #c8e6c8;
 }

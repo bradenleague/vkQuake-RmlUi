@@ -7,7 +7,7 @@
 
 .sys-label {
     font-family: Space Mono;
-    font-size: 11dp;
+    font-size: 0.667rem;
     text-transform: uppercase;
     letter-spacing: 1dp;
     color: #5a8a5a;
@@ -15,7 +15,7 @@
 
 .stat-value {
     font-family: Space Mono;
-    font-size: 18dp;
+    font-size: 1.0rem;
     color: #c8e6c8;
 }
 
@@ -48,13 +48,13 @@
 
 .visor-header-sep {
     font-family: Space Mono;
-    font-size: 10dp;
+    font-size: 0.667rem;
     color: #3a6b3a;
 }
 
 .scoreboard-level {
     color: #c8e6c8;
-    font-size: 12dp;
+    font-size: 0.667rem;
 }
 
 /* ── Single Player Stats ── */
@@ -109,12 +109,12 @@
 
 .dm-name {
     font-family: Space Mono;
-    font-size: 14dp;
+    font-size: 0.889rem;
     color: #c8e6c8;
 }
 
 .dm-frags {
     font-family: Space Mono;
-    font-size: 14dp;
+    font-size: 0.889rem;
     color: #4aaa4a;
 }

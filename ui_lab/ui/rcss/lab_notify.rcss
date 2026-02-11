@@ -19,7 +19,7 @@
 
 .sys-label {
     font-family: Space Mono;
-    font-size: 11dp;
+    font-size: 0.667rem;
     text-transform: uppercase;
     letter-spacing: 1dp;
     color: #5a8a5a;
@@ -36,13 +36,13 @@
 }
 
 .notify-header {
-    font-size: 10dp;
+    font-size: 0.667rem;
     margin-bottom: 2dp;
 }
 
 .notify-line {
     font-family: Space Grotesk;
-    font-size: 15dp;
+    font-size: 0.889rem;
     color: #c8e6c8;
     padding: 4dp 8dp;
     border-left: 2dp #3a6b3a;
