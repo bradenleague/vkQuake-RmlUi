@@ -1,0 +1,41 @@
+<rml>
+<head>
+    <title>Key Bindings</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-options-keys" data-model="cvars">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Controls</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-scroll">
+                <div class="lab-option-list">
+
+                    <div data-for="kb : keybinds">
+                        <div class="lab-section-header" data-if="kb.is_header">{{ kb.label }}</div>
+                        <div data-if="!kb.is_header"
+                             class="lab-keybind-row"
+                             data-class-capturing="kb.is_capturing"
+                             data-event-click="capture_key(kb.action)">
+                            <span class="lab-keybind-action">{{ kb.label }}</span>
+                            <span class="lab-keybind-key" data-if="!kb.is_capturing">{{ kb.key_name }}</span>
+                            <span class="lab-keybind-key" data-if="kb.is_capturing">Press a key...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

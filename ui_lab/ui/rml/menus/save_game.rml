@@ -1,0 +1,47 @@
+<rml>
+<head>
+    <title>Save Game</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-save-game" data-model="game">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Save Game</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-scroll">
+                <div class="lab-slot" onclick="save_game('quick')">
+                    <div>
+                        <div class="lab-slot-name">Quick Save</div>
+                        <div class="lab-slot-details">Press F6 to quick save</div>
+                    </div>
+                </div>
+
+                <div class="lab-divider"></div>
+
+                <div data-for="slot : save_slots">
+                    <div class="lab-slot" data-event-click="save_slot(slot.slot_id)">
+                        <div>
+                            <div class="lab-slot-name">Slot {{ slot.slot_number + 1 }}</div>
+                            <div class="lab-slot-details"
+                                 data-class-lab-slot-empty="!slot.is_loadable">
+                                {{ slot.description }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

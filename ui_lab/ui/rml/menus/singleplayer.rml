@@ -1,0 +1,28 @@
+<rml>
+<head>
+    <title>Single Player</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-singleplayer">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Single Player</div>
+        </div>
+
+        <div class="lab-panel solo">
+            <button class="lab-btn primary" onclick="new_game()">New Game</button>
+            <button class="lab-btn" onclick="navigate('load_game')">Load Game</button>
+            <button class="lab-btn" onclick="navigate('save_game')">Save Game</button>
+
+            <div class="lab-divider"></div>
+
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

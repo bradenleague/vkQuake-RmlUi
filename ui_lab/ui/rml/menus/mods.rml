@@ -1,0 +1,43 @@
+<rml>
+<head>
+    <title>Mods</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-mods" data-model="game">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Mods</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-scroll">
+                <div data-for="mod : mods">
+                    <div class="lab-slot" data-event-click="select_mod(mod.name)">
+                        <div>
+                            <div class="lab-slot-name">{{ mod.display_name }}</div>
+                            <div class="lab-slot-details">{{ mod.name }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div data-if="num_mods == 0">
+                    <div class="lab-slot">
+                        <div>
+                            <div class="lab-slot-details lab-slot-empty">No mods found</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

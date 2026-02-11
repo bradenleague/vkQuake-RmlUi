@@ -6,8 +6,7 @@
 </head>
 <body id="lab-pause" data-model="game">
 
-    <div class="lab-backdrop"></div>
-
+    <div class="lab-overlay">
     <div class="lab-shell compact">
         <div class="lab-header">
             <div class="lab-title">Paused</div>
@@ -22,6 +21,7 @@
             <button class="lab-btn" onclick="main_menu()">Main Menu</button>
             <button class="lab-btn danger" onclick="navigate('quit')">Quit</button>
         </div>
+    </div>
     </div>
 
 </body>

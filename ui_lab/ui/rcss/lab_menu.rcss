@@ -1,28 +1,63 @@
 body#lab-main,
-body#lab-pause {
+body#lab-pause,
+body#lab-options-game,
+body#lab-quit,
+body#lab-singleplayer,
+body#lab-multiplayer,
+body#lab-options,
+body#lab-options-graphics,
+body#lab-options-sound,
+body#lab-options-video,
+body#lab-options-keys,
+body#lab-create-game,
+body#lab-join-game,
+body#lab-player-setup,
+body#lab-load-game,
+body#lab-save-game,
+body#lab-help,
+body#lab-confirm-reset,
+body#lab-mods {
     width: 100%;
     height: 100%;
     color: #e9efe6;
 }
 
-.lab-backdrop {
-    position: absolute;
-    left: 0;
-    top: 0;
+.lab-overlay {
     width: 100%;
     height: 100%;
     background-color: #0a120d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .lab-shell {
-    position: absolute;
-    left: 50%;
-    top: 50%;
     width: 1240dp;
-    transform: translate(-50%, -50%);
+    max-width: 95%;
+    max-height: 90%;
+    overflow: auto;
+    display: block;
     background-color: #111f17ee;
     border: 2dp #9cc98b;
     padding: 28dp;
+}
+
+.lab-shell scrollbarvertical {
+    width: 6dp;
+    margin-left: 4dp;
+}
+
+.lab-shell scrollbarvertical slidertrack {
+    background-color: #0d1a13;
+}
+
+.lab-shell scrollbarvertical sliderbar {
+    background-color: #446950;
+    min-height: 30dp;
+}
+
+.lab-shell scrollbarvertical sliderbar:hover {
+    background-color: #8de5a2;
 }
 
 .lab-shell.compact {
@@ -139,4 +174,301 @@ body#lab-pause {
     margin-top: 18dp;
     font-size: 14dp;
     color: #9dc7a3;
+}
+
+/* ============================================
+   Option Rows (settings menus)
+   ============================================ */
+
+.lab-option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+}
+
+.lab-section-header {
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    color: #8de5a2;
+    text-transform: uppercase;
+    letter-spacing: 2dp;
+    margin-top: 18dp;
+    margin-bottom: 8dp;
+    padding-bottom: 6dp;
+    border-bottom: 1dp #446950;
+}
+
+.lab-option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8dp 10dp;
+    border-bottom: 1dp #1a2e22;
+    transition: background-color 0.1s;
+}
+
+.lab-option-row:hover {
+    background-color: #183023;
+}
+
+.lab-option-label {
+    flex: 0 0 220dp;
+    color: #e9efe6;
+    font-size: 15dp;
+}
+
+.lab-option-value {
+    color: #8de5a2;
+    font-size: 15dp;
+    min-width: 120dp;
+    text-align: right;
+}
+
+.lab-option-row.clickable {
+    cursor: pointer;
+    tab-index: auto;
+    nav: vertical;
+}
+
+.lab-option-row.clickable:focus-visible {
+    background-color: #183023;
+}
+
+.lab-option-row.clickable:hover .lab-option-value,
+.lab-option-row.clickable:focus-visible .lab-option-value {
+    color: #d7f6c9;
+}
+
+/* ── Sliders ── */
+
+.lab-option-row input.range {
+    display: block;
+    width: 240dp;
+    min-width: 180dp;
+    margin-left: 16dp;
+    flex: 1 1 240dp;
+    height: 24dp;
+    cursor: pointer;
+    tab-index: auto;
+    nav: vertical;
+}
+
+input.range slidertrack {
+    height: 2dp;
+    background-color: #446950;
+    border-width: 0;
+}
+
+input.range sliderbar {
+    width: 14dp;
+    height: 14dp;
+    background-color: #9cc98b;
+    border-width: 0;
+    margin-top: -6dp;
+}
+
+input.range sliderbar:hover {
+    background-color: #8de5a2;
+}
+
+input.range:focus-visible sliderbar {
+    background-color: #8de5a2;
+}
+
+input.range sliderbar:active {
+    background-color: #d7f6c9;
+}
+
+input.range sliderarrowdec,
+input.range sliderarrowinc {
+    width: 0;
+    display: none;
+}
+
+/* ── Scroll Area ── */
+
+.lab-scroll {
+    max-height: 450dp;
+    overflow-y: auto;
+    padding-right: 8dp;
+    width: 100%;
+    display: block;
+}
+
+.lab-scroll scrollbarvertical {
+    width: 6dp;
+    margin-left: 4dp;
+}
+
+.lab-scroll scrollbarvertical slidertrack {
+    background-color: #0d1a13;
+}
+
+.lab-scroll scrollbarvertical sliderbar {
+    background-color: #446950;
+    min-height: 30dp;
+}
+
+.lab-scroll scrollbarvertical sliderbar:hover {
+    background-color: #8de5a2;
+}
+
+/* ============================================
+   Dialog Styles (quit, confirm, etc.)
+   ============================================ */
+
+.lab-dialog-message {
+    font-family: Space Grotesk;
+    font-size: 18dp;
+    color: #9dc7a3;
+    margin-bottom: 24dp;
+    line-height: 1.5;
+}
+
+.lab-dialog-buttons {
+    display: flex;
+    gap: 12dp;
+}
+
+.lab-dialog-buttons .lab-btn {
+    flex: 1;
+    text-align: center;
+    margin-top: 0;
+}
+
+/* ============================================
+   Wide Shell (settings + list menus)
+   ============================================ */
+
+.lab-shell.wide {
+    width: 660dp;
+}
+
+/* ============================================
+   Section Divider
+   ============================================ */
+
+.lab-divider {
+    height: 1dp;
+    background-color: #446950;
+    margin: 12dp 0;
+}
+
+/* ============================================
+   Text Inputs in Option Rows
+   ============================================ */
+
+.lab-option-row .lab-input {
+    width: auto;
+    flex: 1 1 200dp;
+    margin-left: 16dp;
+}
+
+/* ============================================
+   Keybind Rows (options_keys)
+   ============================================ */
+
+.lab-keybind-row {
+    display: flex;
+    align-items: center;
+    padding: 8dp 10dp;
+    border-bottom: 1dp #1a2e22;
+    cursor: pointer;
+    tab-index: auto;
+    nav: vertical;
+    transition: background-color 0.1s;
+}
+
+.lab-keybind-row:hover,
+.lab-keybind-row:focus-visible {
+    background-color: #183023;
+}
+
+.lab-keybind-action {
+    flex: 1;
+    color: #e9efe6;
+    font-size: 15dp;
+}
+
+.lab-keybind-key {
+    font-family: Space Grotesk;
+    font-size: 14dp;
+    color: #8de5a2;
+    border: 1dp #446950;
+    min-width: 120dp;
+    text-align: center;
+    padding: 4dp 10dp;
+}
+
+.lab-keybind-row:hover .lab-keybind-key,
+.lab-keybind-row:focus-visible .lab-keybind-key {
+    border-color: #9cc98b;
+}
+
+.lab-keybind-row.capturing .lab-keybind-key {
+    background-color: #8de5a2;
+    color: #0a120d;
+}
+
+/* ============================================
+   Save / Mod Slots (load_game, save_game, mods)
+   ============================================ */
+
+.lab-slot {
+    display: flex;
+    padding: 10dp 12dp;
+    border-bottom: 1dp #1a2e22;
+    cursor: pointer;
+    tab-index: auto;
+    nav: vertical;
+    transition: background-color 0.1s;
+}
+
+.lab-slot:hover,
+.lab-slot:focus-visible {
+    background-color: #183023;
+    border-left: 2dp #8de5a2;
+}
+
+.lab-slot-name {
+    font-family: Space Grotesk;
+    font-size: 16dp;
+    color: #e9efe6;
+}
+
+.lab-slot-details {
+    font-size: 13dp;
+    color: #9dc7a3;
+    margin-top: 2dp;
+}
+
+.lab-slot-empty {
+    color: #446950;
+    font-style: italic;
+}
+
+/* ============================================
+   Video Mode List (options_video)
+   ============================================ */
+
+.lab-mode-option {
+    padding: 6dp 10dp;
+    color: #9dc7a3;
+    border-bottom: 1dp #1a2e22;
+    cursor: pointer;
+    tab-index: auto;
+    nav: vertical;
+    transition: background-color 0.1s;
+}
+
+.lab-mode-option:hover,
+.lab-mode-option:focus-visible {
+    color: #e9efe6;
+    background-color: #183023;
+}
+
+.lab-mode-option.active {
+    color: #8de5a2;
+    border-left: 2dp #8de5a2;
 }

@@ -1,0 +1,42 @@
+<rml>
+<head>
+    <title>Join Game</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-join-game">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Join Game</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-option-list">
+                <div class="lab-section-header">Direct Connect</div>
+
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Server Address</span>
+                    <input id="server-address" type="text" class="lab-input"
+                           value="" />
+                </div>
+
+                <div class="lab-section-header">Server Browser</div>
+            </div>
+
+            <button class="lab-btn" onclick="command('slist')">Search for Servers</button>
+
+            <div class="lab-divider"></div>
+
+            <button class="lab-btn primary" onclick="connect_to('server-address')">Connect</button>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

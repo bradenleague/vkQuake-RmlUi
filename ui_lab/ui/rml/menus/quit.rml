@@ -1,0 +1,30 @@
+<rml>
+<head>
+    <title>Quit</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-quit">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Quit Game?</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-dialog-message">
+                Are you sure you want to quit?
+                Any unsaved progress will be lost.
+            </div>
+
+            <div class="lab-dialog-buttons">
+                <button class="lab-btn danger" onclick="quit()">Yes, Quit</button>
+                <button class="lab-btn" onclick="close()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

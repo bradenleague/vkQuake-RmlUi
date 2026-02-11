@@ -1,0 +1,54 @@
+<rml>
+<head>
+    <title>Player Setup</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-player-setup" data-model="cvars">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Player Setup</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-option-list">
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Name</span>
+                    <input type="text" class="lab-input"
+                           data-value="player_name"
+                           onchange="cvar_changed('player_name')" />
+                </div>
+
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Hostname</span>
+                    <input type="text" class="lab-input"
+                           data-value="hostname"
+                           onchange="cvar_changed('hostname')" />
+                </div>
+
+                <div class="lab-divider"></div>
+
+                <div class="lab-section-header">Player Color</div>
+
+                <div class="lab-option-row clickable" onclick="cycle_cvar('cl_color_top', 1)">
+                    <span class="lab-option-label">Shirt Color</span>
+                    <span class="lab-option-value">{{ cl_color_top_label }}</span>
+                </div>
+
+                <div class="lab-option-row clickable" onclick="cycle_cvar('cl_color_bottom', 1)">
+                    <span class="lab-option-label">Pants Color</span>
+                    <span class="lab-option-value">{{ cl_color_bottom_label }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

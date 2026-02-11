@@ -47,6 +47,48 @@ RmlUi does **not** behave like a web browser with an implicit HTML "user-agent s
             .overlay { width: 100%; height: 100%; }
 ```
 
+### Scroll Containers - Use Flex Centering, Not Absolute Positioning
+
+`overflow: auto` and `max-height: <percent>` do NOT work reliably on absolutely positioned elements with `transform`. Percentage heights fail to resolve against the containing block, and scrollbars may not appear or clip incorrectly.
+
+**Use a flex-centered parent** (like the base `menu-overlay` → `menu-container` pattern) so `max-height: 90%` resolves correctly against the flex container's definite size:
+
+```css
+/* WRONG — absolute + transform breaks scroll containment */
+.shell {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 90%;
+    overflow-y: auto;  /* unreliable */
+}
+
+/* CORRECT — flex centering, block child with overflow */
+.overlay {
+    width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.shell {
+    width: 660dp;
+    max-width: 95%;
+    max-height: 90%;
+    overflow: auto;
+    display: block;
+}
+```
+
+For inner scroll areas (e.g. option lists), nest a second scroll container with a fixed `max-height`:
+```css
+.scroll-area {
+    max-height: 450dp;
+    overflow-y: auto;
+    display: block;  /* required for overflow to work */
+    width: 100%;
+}
+```
+
 ### No Background Images
 ```css
 /* WRONG */ background-image: url('bg.png');

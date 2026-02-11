@@ -1,0 +1,71 @@
+<rml>
+<head>
+    <title>Help</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-help">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Controls</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-option-list">
+                <div class="lab-option-row">
+                    <span class="lab-option-label">W A S D</span>
+                    <span class="lab-option-value">Move</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Mouse</span>
+                    <span class="lab-option-value">Look</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Left Click</span>
+                    <span class="lab-option-value">Attack</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Space</span>
+                    <span class="lab-option-value">Jump / Swim Up</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">1 - 8</span>
+                    <span class="lab-option-value">Select Weapon</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Tab</span>
+                    <span class="lab-option-value">Scoreboard</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">T</span>
+                    <span class="lab-option-value">Chat</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">Esc</span>
+                    <span class="lab-option-value">Menu</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">~ (Tilde)</span>
+                    <span class="lab-option-value">Console</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">F5</span>
+                    <span class="lab-option-value">Quick Save</span>
+                </div>
+                <div class="lab-option-row">
+                    <span class="lab-option-label">F9</span>
+                    <span class="lab-option-value">Quick Load</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

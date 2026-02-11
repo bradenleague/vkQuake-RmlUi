@@ -1,0 +1,138 @@
+<rml>
+<head>
+    <title>Graphics Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-options-graphics" data-model="cvars">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Graphics</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-scroll">
+                <div class="lab-option-list">
+                    <div class="lab-section-header">Display</div>
+
+                    <div class="lab-option-row clickable" onclick="navigate('options_video')">
+                        <span class="lab-option-label">Video Mode</span>
+                        <span class="lab-option-value">Configure...</span>
+                    </div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Max FPS</span>
+                        <input type="range" class="range" min="30" max="1000" step="10"
+                               data-value="max_fps"
+                               onchange="cvar_changed('max_fps')" />
+                    </div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Field of View</span>
+                        <input type="range" class="range" min="50" max="130" step="5"
+                               data-value="fov"
+                               onchange="cvar_changed('fov')" />
+                    </div>
+
+                    <div class="lab-section-header">Image Quality</div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Gamma</span>
+                        <input type="range" class="range" min="0.5" max="2.0" step="0.05"
+                               data-value="gamma"
+                               onchange="cvar_changed('gamma')" />
+                    </div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Contrast</span>
+                        <input type="range" class="range" min="0.5" max="2.0" step="0.05"
+                               data-value="contrast"
+                               onchange="cvar_changed('contrast')" />
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('palettize', 1)">
+                        <span class="lab-option-label">8-bit Color</span>
+                        <span class="lab-option-value" data-if="palettize">On</span>
+                        <span class="lab-option-value" data-if="!palettize">Off</span>
+                    </div>
+
+                    <div class="lab-section-header">Texture Quality</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('texture_quality', 1)">
+                        <span class="lab-option-label">Texture Quality</span>
+                        <span class="lab-option-value">{{ texture_quality_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('texture_filter', 1)">
+                        <span class="lab-option-label">Texture Filter</span>
+                        <span class="lab-option-value">{{ texture_filter_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('aniso', 1)">
+                        <span class="lab-option-label">Anisotropic Filtering</span>
+                        <span class="lab-option-value">{{ aniso_label }}</span>
+                    </div>
+
+                    <div class="lab-section-header">Anti-Aliasing</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('msaa', 1)">
+                        <span class="lab-option-label">MSAA Samples</span>
+                        <span class="lab-option-value">{{ msaa_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('aa_mode', 1)">
+                        <span class="lab-option-label">AA Mode</span>
+                        <span class="lab-option-value">{{ aa_mode_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('render_scale', 1)">
+                        <span class="lab-option-label">Render Scale</span>
+                        <span class="lab-option-value">{{ render_scale_label }}</span>
+                    </div>
+
+                    <div class="lab-section-header">Effects</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('particles', 1)">
+                        <span class="lab-option-label">Particles</span>
+                        <span class="lab-option-value">{{ particles_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('dynamic_lights', 1)">
+                        <span class="lab-option-label">Dynamic Lights</span>
+                        <span class="lab-option-value" data-if="dynamic_lights">On</span>
+                        <span class="lab-option-value" data-if="!dynamic_lights">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('underwater_fx', 1)">
+                        <span class="lab-option-label">Underwater Effects</span>
+                        <span class="lab-option-value" data-if="underwater_fx">On</span>
+                        <span class="lab-option-value" data-if="!underwater_fx">Off</span>
+                    </div>
+
+                    <div class="lab-section-header">Models</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('enhanced_models', 1)">
+                        <span class="lab-option-label">Enhanced Models</span>
+                        <span class="lab-option-value" data-if="enhanced_models">On</span>
+                        <span class="lab-option-value" data-if="!enhanced_models">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('model_interpolation', 1)">
+                        <span class="lab-option-label">Model Interpolation</span>
+                        <span class="lab-option-value" data-if="model_interpolation">On</span>
+                        <span class="lab-option-value" data-if="!model_interpolation">Off</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

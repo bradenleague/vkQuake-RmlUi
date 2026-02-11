@@ -1,0 +1,28 @@
+<rml>
+<head>
+    <title>Multiplayer</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-multiplayer">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Multiplayer</div>
+        </div>
+
+        <div class="lab-panel solo">
+            <button class="lab-btn" onclick="navigate('join_game')">Join Game</button>
+            <button class="lab-btn" onclick="navigate('create_game')">Create Game</button>
+            <button class="lab-btn" onclick="navigate('player_setup')">Player Setup</button>
+
+            <div class="lab-divider"></div>
+
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

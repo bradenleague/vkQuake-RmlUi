@@ -1,0 +1,30 @@
+<rml>
+<head>
+    <title>Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-options">
+
+    <div class="lab-overlay">
+    <div class="lab-shell compact">
+        <div class="lab-header">
+            <div class="lab-title">Options</div>
+        </div>
+
+        <div class="lab-panel solo">
+            <button class="lab-btn" onclick="navigate('options_game')">Game Options</button>
+            <button class="lab-btn" onclick="navigate('options_keys')">Controls</button>
+            <button class="lab-btn" onclick="navigate('options_graphics')">Graphics</button>
+            <button class="lab-btn" onclick="navigate('options_sound')">Sound</button>
+
+            <div class="lab-divider"></div>
+
+            <button class="lab-btn danger" onclick="navigate('confirm_reset')">Reset to Defaults</button>
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

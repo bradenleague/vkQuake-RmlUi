@@ -6,8 +6,7 @@
 </head>
 <body id="lab-main" data-model="game">
 
-    <div class="lab-backdrop"></div>
-
+    <div class="lab-overlay">
     <div class="lab-shell">
         <div class="lab-header">
             <div class="lab-title">{{ game_title }} :: UI LAB</div>
@@ -53,6 +52,7 @@
         </div>
 
         <div class="lab-footer">ESC closes current menu level</div>
+    </div>
     </div>
 
 </body>

@@ -1,0 +1,135 @@
+<rml>
+<head>
+    <title>Game Options</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-options-game" data-model="cvars">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Game Options</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-scroll">
+                <div class="lab-option-list">
+                    <div class="lab-section-header">Interface</div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Interface Scale</span>
+                        <input type="range" class="range" min="1" max="4" step="0.5"
+                               data-value="ui_scale"
+                               onchange="cvar_changed('ui_scale')" />
+                    </div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">HUD Opacity</span>
+                        <input type="range" class="range" min="0" max="1" step="0.1"
+                               data-value="hud_opacity"
+                               onchange="cvar_changed('hud_opacity')" />
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('crosshair', 1)">
+                        <span class="lab-option-label">Crosshair</span>
+                        <span class="lab-option-value">{{ crosshair_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('show_fps', 1)">
+                        <span class="lab-option-label">Show FPS</span>
+                        <span class="lab-option-value" data-if="show_fps">On</span>
+                        <span class="lab-option-value" data-if="!show_fps">Off</span>
+                    </div>
+
+                    <div class="lab-section-header">Controls</div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">Mouse Speed</span>
+                        <input type="range" class="range" min="1" max="20" step="0.5"
+                               data-value="sensitivity"
+                               onchange="cvar_changed('sensitivity')" />
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('invert_mouse', 1)">
+                        <span class="lab-option-label">Invert Mouse</span>
+                        <span class="lab-option-value" data-if="invert_mouse">On</span>
+                        <span class="lab-option-value" data-if="!invert_mouse">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('m_filter', 1)">
+                        <span class="lab-option-label">Mouse Filter</span>
+                        <span class="lab-option-value" data-if="m_filter">On</span>
+                        <span class="lab-option-value" data-if="!m_filter">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('always_run', 1)">
+                        <span class="lab-option-label">Always Run</span>
+                        <span class="lab-option-value" data-if="always_run">On</span>
+                        <span class="lab-option-value" data-if="!always_run">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('sv_aim', 1)">
+                        <span class="lab-option-label">Auto Aim</span>
+                        <span class="lab-option-value">{{ sv_aim_label }}</span>
+                    </div>
+
+                    <div class="lab-section-header">View</div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">View Bob</span>
+                        <input type="range" class="range" min="0" max="0.04" step="0.004"
+                               data-value="view_bob"
+                               onchange="cvar_changed('view_bob')" />
+                    </div>
+
+                    <div class="lab-option-row">
+                        <span class="lab-option-label">View Roll</span>
+                        <input type="range" class="range" min="0" max="4" step="0.5"
+                               data-value="view_roll"
+                               onchange="cvar_changed('view_roll')" />
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('gun_kick', 1)">
+                        <span class="lab-option-label">Gun Kick</span>
+                        <span class="lab-option-value">{{ gun_kick_label }}</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('show_gun', 1)">
+                        <span class="lab-option-label">Show Gun</span>
+                        <span class="lab-option-value" data-if="show_gun">On</span>
+                        <span class="lab-option-value" data-if="!show_gun">Off</span>
+                    </div>
+
+                    <div class="lab-section-header">Loading</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('auto_load', 1)">
+                        <span class="lab-option-label">Auto Load</span>
+                        <span class="lab-option-value" data-if="auto_load">On</span>
+                        <span class="lab-option-value" data-if="!auto_load">Off</span>
+                    </div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('startup_demos', 1)">
+                        <span class="lab-option-label">Startup Demos</span>
+                        <span class="lab-option-value" data-if="startup_demos">On</span>
+                        <span class="lab-option-value" data-if="!startup_demos">Off</span>
+                    </div>
+
+                    <div class="lab-section-header">Difficulty</div>
+
+                    <div class="lab-option-row clickable" onclick="cycle_cvar('skill', 1)">
+                        <span class="lab-option-label">Skill</span>
+                        <span class="lab-option-value">{{ skill_label }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>

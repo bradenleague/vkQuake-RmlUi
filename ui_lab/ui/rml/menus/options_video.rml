@@ -1,0 +1,59 @@
+<rml>
+<head>
+    <title>Video Mode</title>
+    <link type="text/rcss" href="../../rcss/base.rcss"/>
+    <link type="text/rcss" href="../../rcss/lab_menu.rcss"/>
+</head>
+<body id="lab-options-video" data-model="cvars">
+
+    <div class="lab-overlay">
+    <div class="lab-shell wide">
+        <div class="lab-header">
+            <div class="lab-title">Video Mode</div>
+        </div>
+
+        <div class="lab-panel">
+            <div class="lab-section-header">Resolution</div>
+            <div class="lab-scroll" style="max-height: 250dp;">
+                <div data-for="mode : video_modes">
+                    <div class="lab-mode-option"
+                         data-class-active="mode.is_current"
+                         data-event-click="select_resolution(mode.width, mode.height)">
+                        {{ mode.label }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="lab-divider"></div>
+
+            <div class="lab-option-list">
+                <div class="lab-option-row clickable" onclick="command('vid_nextrate')">
+                    <span class="lab-option-label">Refresh Rate</span>
+                    <span class="lab-option-value">{{ vid_rate_label }}</span>
+                </div>
+
+                <div class="lab-option-row clickable" onclick="command('vid_nextfullscreen')">
+                    <span class="lab-option-label">Display Mode</span>
+                    <span class="lab-option-value">{{ vid_fullscreen_label }}</span>
+                </div>
+
+                <div class="lab-option-row clickable" onclick="command('vid_nextvsync')">
+                    <span class="lab-option-label">V-Sync</span>
+                    <span class="lab-option-value">{{ vid_vsync_label }}</span>
+                </div>
+            </div>
+
+            <div class="lab-divider"></div>
+
+            <button class="lab-btn primary" onclick="command('vid_test')">Test Changes</button>
+            <button class="lab-btn" onclick="command('vid_restart')">Apply Changes</button>
+        </div>
+
+        <div class="lab-footer">
+            <button class="lab-btn" onclick="close()">Back</button>
+        </div>
+    </div>
+    </div>
+
+</body>
+</rml>
