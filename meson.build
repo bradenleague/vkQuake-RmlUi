@@ -405,12 +405,18 @@ if use_rmlui
     message('Configuring RmlUI via CMake...')
     rmlui_cmake_cfg = run_command('cmake',
         rmlui_cmake_args,
-        check : true)
+        check : false)
+    if rmlui_cmake_cfg.returncode() != 0
+        error('CMake configure failed:\n' + rmlui_cmake_cfg.stdout() + '\n' + rmlui_cmake_cfg.stderr())
+    endif
 
     message('Building RmlUI...')
     rmlui_cmake_build = run_command('cmake',
         '--build', rmlui_build_dir, '--parallel',
-        check : true)
+        check : false)
+    if rmlui_cmake_build.returncode() != 0
+        error('CMake build failed:\n' + rmlui_cmake_build.stdout() + '\n' + rmlui_cmake_build.stderr())
+    endif
 
     cxx = meson.get_compiler('cpp')
     rmlui_core_lib = cxx.find_library('rmlui',
