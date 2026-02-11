@@ -13,6 +13,7 @@ layout (push_constant) uniform PushConsts
 	float ui_opacity;
 	float echo_strength;
 	float echo_scale;
+	float ui_additive;
 }
 push_constants;
 
@@ -86,7 +87,13 @@ void main ()
 
 	// Composite: UI buffer is premultiplied alpha, scaled by opacity (scr_sbaralpha)
 	float opacity = clamp (push_constants.ui_opacity, 0.1, 1.0);
-	vec3 frag = game * (1.0 - ui.a * opacity) + ui.rgb * opacity;
+	float add = clamp (push_constants.ui_additive, 0.0, 1.0);
+
+	// Normal: game darkened under UI, then UI layered on top
+	// Additive: game preserved, UI added as emissive glow (dimmed to avoid blow-out)
+	float alpha_weight = ui.a * opacity * (1.0 - add);
+	float ui_scale_factor = mix (1.0, 0.7, add); // dim UI in additive to prevent clipping
+	vec3 frag = game * (1.0 - alpha_weight) + ui.rgb * opacity * ui_scale_factor;
 
 	// Gamma and contrast
 	frag = frag * push_constants.contrast;

@@ -25,6 +25,13 @@
                     </div>
 
                     <div class="lab-option-row">
+                        <span class="lab-option-label">Font Scale</span>
+                        <input type="range" class="range" min="0.75" max="2" step="0.05"
+                               data-value="font_scale"
+                               onchange="cvar_changed('font_scale')" />
+                    </div>
+
+                    <div class="lab-option-row">
                         <span class="lab-option-label">HUD Opacity</span>
                         <input type="range" class="range" min="0" max="1" step="0.1"
                                data-value="hud_opacity"

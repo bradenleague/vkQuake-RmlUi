@@ -38,9 +38,17 @@ Five stages in order:
    ui.a = max(ui.a, echo.a * echo_strength)
    ```
 
-4. **Composite** — Premultiplied alpha blend with opacity scale:
-   `opacity = clamp(ui_opacity, 0.1, 1.0)`,
-   `game * (1 - ui.a * opacity) + ui.rgb * opacity`
+4. **Composite** — Premultiplied alpha blend with opacity and additive control:
+   ```
+   opacity = clamp(ui_opacity, 0.1, 1.0)
+   add = clamp(ui_additive, 0.0, 1.0)
+   alpha_weight = ui.a * opacity * (1.0 - add)
+   ui_scale_factor = mix(1.0, 0.7, add)
+   frag = game * (1.0 - alpha_weight) + ui.rgb * opacity * ui_scale_factor
+   ```
+   - **Normal mode** (`add = 0`): Standard alpha composite — game darkens under opaque UI, then UI layered on top.
+   - **Additive mode** (`add = 1`): Game is fully preserved, UI is added as emissive glow (dimmed to 70% to prevent blow-out). Creates a holographic HUD feel.
+   - **Intermediate values**: Smooth blend between modes.
 
 5. **Color grading** — Contrast multiply, then gamma power curve.
 
@@ -59,6 +67,7 @@ All effect parameters are passed per-frame via Vulkan push constants from `GL_En
 | 24 | `ui_opacity` | `scr_sbaralpha` cvar | UI layer opacity input (shader clamps effective range to 0.1–1.0) |
 | 28 | `echo_strength` | `r_ui_echo` cvar | Helmet display echo intensity (0 = off) |
 | 32 | `echo_scale` | `r_ui_echo_scale` cvar | Echo UV scale from center (1.0 = no offset, >1.0 = larger ghost) |
+| 36 | `ui_additive` | `r_ui_additive` cvar | Blend mode: 0 = normal alpha composite, 1 = additive emissive glow |
 
 ## Console Variables
 
@@ -68,6 +77,7 @@ All effect parameters are passed per-frame via Vulkan push constants from `GL_En
 | `r_ui_chromatic` | `0.003` | `CVAR_NONE` | Chromatic aberration intensity. Scaled by `1080/height` so the effect is resolution-independent. Set to `0` to disable. |
 | `r_ui_echo` | `0` | `CVAR_NONE` | Helmet display echo strength. Adds a faint ghost of the UI at a different focal depth, as if projected inside a curved visor. Set to `0` to disable. |
 | `r_ui_echo_scale` | `1` | `CVAR_NONE` | Echo UV scale from screen center. Values > 1.0 make the ghost slightly larger (simulating a deeper focal plane). |
+| `r_ui_additive` | `0` | `CVAR_NONE` | Composite blend mode. 0 = normal (UI darkens game underneath), 1 = additive (UI glows on top of game). Intermediate values blend between modes. UI is dimmed to 70% in additive mode to prevent color clipping. |
 | `vid_gamma` | (engine default) | `CVAR_ARCHIVE` | Standard gamma correction. |
 | `vid_contrast` | `1.4` | `CVAR_ARCHIVE` | Contrast multiplier, clamped to [1.0, 2.0]. |
 | `scr_sbaralpha` | `0.75` | `CVAR_ARCHIVE` | HUD opacity. Controls both the classic status bar and the RmlUI layer via the post-process pass. |

@@ -32,7 +32,11 @@ make setup         # First-time: check deps, init submodule, download PAKs
 make               # Build everything (release)
 make run           # Build and launch (base game)
 make run MOD_NAME=mymod  # Build and launch specific mod
+make smoke         # Build + launch engine for ~20 frames (catches startup crashes)
+make lua-test      # Build + run Lua test suite
 make engine        # Rebuild engine only
+make format        # Auto-format with clang-format 17 (matching CI)
+make format-check  # Check formatting without modifying files
 make meson-setup   # Wipe and reconfigure meson
 make clean         # Clean build artifacts
 make distclean     # Clean build + id1/ assets
@@ -50,7 +54,7 @@ rm -rf build && meson setup build . --buildtype=debug && meson compile -C build
 
 ## Build & Commit Hygiene
 
-- Always verify the build compiles cleanly (`make`) BEFORE committing refactoring changes
+- Always verify the build compiles cleanly (`make`) BEFORE committing refactoring changes. Use `make smoke` to also catch runtime startup crashes.
 - After file moves, run a full build to catch broken includes/paths before committing
 - When restructuring directories, update ALL references (meson.build, Makefile, `#include` paths, docs) in the SAME commit
 

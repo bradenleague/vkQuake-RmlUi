@@ -326,7 +326,6 @@ incdirs = [
     'Quake/mimalloc',
 ]
 
-cxx = meson.get_compiler('cpp')
 cxxflags = ['-Wall', '-std=c++17']
 # RmlUI integration (optional)
 use_rmlui = get_option('use_rmlui')

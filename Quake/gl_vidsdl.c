@@ -126,6 +126,7 @@ cvar_t		  r_ui_warp = {"r_ui_warp", "-0.1", CVAR_NONE};
 cvar_t		  r_ui_chromatic = {"r_ui_chromatic", "0.003", CVAR_NONE};
 cvar_t		  r_ui_echo = {"r_ui_echo", "0", CVAR_NONE};
 cvar_t		  r_ui_echo_scale = {"r_ui_echo_scale", "1", CVAR_NONE};
+cvar_t		  r_ui_additive = {"r_ui_additive", "0", CVAR_NONE};
 cvar_t		  r_usesops = {"r_usesops", "1", CVAR_ARCHIVE}; // johnfitz
 #if defined(_DEBUG)
 static cvar_t r_raydebug = {"r_raydebug", "0", 0};
@@ -256,6 +257,7 @@ static void VID_Gamma_Init (void)
 	Cvar_RegisterVariable (&r_ui_chromatic);
 	Cvar_RegisterVariable (&r_ui_echo);
 	Cvar_RegisterVariable (&r_ui_echo_scale);
+	Cvar_RegisterVariable (&r_ui_additive);
 }
 
 /*
@@ -3263,18 +3265,18 @@ static void GL_EndRenderingTask (end_rendering_parms_t *parms)
 
 		// Render post process
 		GL_Viewport (cbx, 0, 0, vid.width, vid.height, 0.0f, 1.0f);
-		float postprocess_values[9] = {
+		float postprocess_values[10] = {
 			vid_gamma.value,	   q_min (2.0f, q_max (1.0f, vid_contrast.value)),
 			r_ui_warp.value,	   r_ui_chromatic.value * (1080.0f / (float)vid.height),
 			v_hud_offset_x,		   v_hud_offset_y,
 			scr_sbaralpha.value,   r_ui_echo.value,
-			r_ui_echo_scale.value,
+			r_ui_echo_scale.value, r_ui_additive.value,
 		};
 
 		R_BindPipeline (cbx, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline);
 		VkDescriptorSet pp_sets[2] = {postprocess_descriptor_set, postprocess_ui_descriptor_set};
 		vkCmdBindDescriptorSets (cbx->cb, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_globals.postprocess_pipeline.layout.handle, 0, 2, pp_sets, 0, NULL);
-		R_PushConstants (cbx, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 9 * sizeof (float), postprocess_values);
+		R_PushConstants (cbx, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 10 * sizeof (float), postprocess_values);
 		vkCmdDraw (cbx->cb, 3, 1, 0, 0);
 	}
 

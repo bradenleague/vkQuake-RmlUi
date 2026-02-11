@@ -185,6 +185,7 @@ void CvarBindingManager::RegisterAllBindings ()
 	RegisterFloat ("sensitivity", "sensitivity", 1.0f, 20.0f, 0.5f);
 	RegisterFloat ("scr_sbaralpha", "hud_opacity", 0.0f, 1.0f, 0.05f);
 	RegisterFloat ("scr_uiscale", "ui_scale", 0.5f, 3.0f, 0.25f);
+	RegisterFloat ("scr_fontscale", "font_scale", 0.75f, 2.0f, 0.05f);
 	RegisterFloat ("cl_bob", "view_bob", 0.0f, 0.05f, 0.005f);
 	RegisterFloat ("cl_rollangle", "view_roll", 0.0f, 5.0f, 0.5f);
 

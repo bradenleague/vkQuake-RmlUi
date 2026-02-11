@@ -99,6 +99,7 @@ cvar_t scr_autoclock = {"scr_autoclock", "1", CVAR_ARCHIVE};
 cvar_t scr_usekfont = {"scr_usekfont", "0", CVAR_NONE}; // 2021 re-release
 cvar_t scr_style = {"scr_style", "0", CVAR_ARCHIVE};
 cvar_t scr_uiscale = {"scr_uiscale", "1", CVAR_ARCHIVE};
+cvar_t scr_fontscale = {"scr_fontscale", "1", CVAR_ARCHIVE};
 cvar_t scr_dpiscale = {"scr_dpiscale", "1", CVAR_ROM};
 #ifdef USE_RMLUI
 cvar_t ui_speeds = {"ui_speeds", "0", CVAR_NONE};
@@ -640,6 +641,7 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_printspeed);
 	Cvar_RegisterVariable (&scr_style);
 	Cvar_RegisterVariable (&scr_uiscale);
+	Cvar_RegisterVariable (&scr_fontscale);
 	Cvar_RegisterVariable (&scr_dpiscale);
 #ifdef USE_RMLUI
 	Cvar_RegisterVariable (&ui_speeds);
