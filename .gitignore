@@ -118,3 +118,5 @@ helgrind.log
 # Test output
 test_results/
 test
+asym_hud
+brutalist

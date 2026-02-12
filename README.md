@@ -5,7 +5,44 @@
        src="https://github.com/user-attachments/assets/489b35a4-bbca-4cb3-b55c-6483a5deafaa" />
 </p>
 
-A [vkQuake](https://github.com/Novum/vkQuake) fork with a modern HTML/CSS UI layer powered by [RmlUI](https://github.com/mikke89/RmlUi). Replaces the original Quake menu and HUD systems with hot-reloadable RML/RCSS documents and real-time data bindings. Uses [LibreQuake](https://github.com/lavenderdotpet/LibreQuake) (BSD-licensed) as the base game assets.
+A [vkQuake](https://github.com/Novum/vkQuake) fork that replaces Quake's menu and HUD systems with a modern HTML/CSS UI layer powered by [RmlUI](https://github.com/mikke89/RmlUi). UI documents are hot-reloadable, scriptable with Lua, and fully overridable by mods. Ships with [LibreQuake](https://github.com/lavenderdotpet/LibreQuake) (BSD-licensed) as the base game content.
+
+## Features
+
+**Declarative UI** — Menus and HUD written in RML (HTML dialect) and RCSS (CSS dialect), not C code
+- 50+ real-time data bindings connect engine state (health, weapons, armor, powerups) directly to UI elements
+- Two-way cvar sync for settings menus — sliders, toggles, and dropdowns stay in sync with the console
+- Hot reload with `ui_reload` and `ui_reload_css` — iterate on UI without restarting the engine
+- Built-in RmlUI debugger for inspecting the DOM and styles in real time
+
+**Lua Scripting** — Add interactive behavior to any UI document without touching C++
+- Engine bridge API exposes game state, cvars, console commands, and per-frame callbacks
+- Full DOM manipulation — create elements, query selectors, set inline styles, toggle classes
+- Lua-backed data models that sync with RML data bindings
+- Scripts hot-reload alongside documents
+
+**Custom Reticle Elements** — Procedural crosshairs built from `<reticle-dot>`, `<reticle-line>`, `<reticle-ring>`, and `<reticle-arc>` primitives
+- 7 animatable RCSS properties (radius, gap, length, width, stroke, start/end angle)
+- Weapon-reactive animations driven by RCSS transitions or Lua controllers
+
+**Post-Process Pipeline** — UI composited as a separate render layer with configurable effects
+- Barrel warp, chromatic aberration, helmet display echo
+- HUD inertia — spring-damped bounce and sway responding to player movement
+- Normal or additive blending modes
+
+**Mod-Friendly** — Mods override menus, HUD, styles, fonts, and scripts via standard Quake directory precedence
+- Fonts auto-discovered from `<mod>/ui/fonts/` at startup and on mod switch
+- Menu title auto-derived from mod directory name
+- Example mod included (`ui_lab`) with a terminal visor HUD
+
+**Vulkan Enhancements** — Beyond upstream vkQuake
+- Batched texture uploads, GPU timestamp instrumentation
+- `VK_KHR_synchronization2` and `VK_KHR_dynamic_rendering` support
+
+<p align="center">
+  <img width="600"
+       src="https://github.com/user-attachments/assets/fccf44b6-feac-4438-a05e-ca6b4172ca7e" />
+</p>
 
 ## Getting Started
 
@@ -13,107 +50,84 @@ A [vkQuake](https://github.com/Novum/vkQuake) fork with a modern HTML/CSS UI lay
 
 **Arch Linux:**
 ```bash
-sudo pacman -S cmake meson ninja sdl2 vulkan-devel glslang freetype2
+sudo pacman -S cmake meson ninja sdl2 vulkan-devel glslang freetype2 lua
+```
+
+**Ubuntu / Debian:**
+```bash
+sudo apt install build-essential cmake meson ninja-build \
+  libvulkan-dev vulkan-sdk libsdl2-dev libfreetype-dev liblua5.3-dev \
+  libvorbis-dev libopus-dev libopusfile-dev libflac-dev libmad0-dev
 ```
 
 **macOS:**
 ```bash
-brew install cmake meson ninja sdl2 molten-vk vulkan-headers glslang freetype
+brew install cmake meson ninja sdl2 molten-vk vulkan-headers glslang freetype lua
 ```
 
-### Clone, Setup, and Run
+### Clone, Build, and Run
 
 ```bash
 git clone --recurse-submodules https://github.com/bradenleague/vkQuake-RmlUi.git
 cd vkQuake-RmlUi
-make setup   # checks deps, inits rmlui submodule, downloads PAK files to id1/
-make run     # builds and launches base game (LibreQuake)
+make setup   # check deps, init submodules, download LibreQuake PAK files
+make run     # build and launch
 ```
 
-To run a specific mod:
+To run with a mod:
 ```bash
-make run MOD_NAME=mymod
+make run MOD_NAME=ui_lab
 ```
 
 ### Build Targets
 
 | Command | Description |
 |---------|-------------|
-| `make` | Build everything |
-| `make run` | Build and launch (set `MOD_NAME` to select mod) |
-| `make engine` | Build the engine (+ embedded RmlUI deps) |
+| `make` | Build everything (release) |
+| `make run` | Build and launch (`MOD_NAME=` to select mod) |
+| `make smoke` | Build and run for ~20 frames (CI smoke test) |
+| `make engine` | Rebuild engine only |
 | `make setup` | First-time setup (deps, submodules, PAK files) |
-| `make meson-setup` | Re-run meson setup for the engine |
+| `make meson-setup` | Wipe and reconfigure meson |
 | `make clean` | Remove build artifacts |
-| `make distclean` | Remove build artifacts + `id1/` assets |
+| `make distclean` | Remove build + downloaded assets |
 
-<p align="center">
-  <img width="600"
-       src="https://github.com/user-attachments/assets/fccf44b6-feac-4438-a05e-ca6b4172ca7e" />
-</p>
+## Modding
 
-## Using with Your Mod
+Mods are directories at the project root, following the standard Quake convention. To create one:
 
-This project follows the standard Quake directory convention — mods are directories at the project root. To create a mod:
-
-1. Create a directory at root (e.g. `mymod/`)
-2. Add a `quake.rc` startup script:
-   ```
-   exec default.cfg
-   exec config.cfg
-   exec autoexec.cfg
-   stuffcmds
-
-   startdemos demo1 demo2 demo3
-   ui_show_when_ready
-   ```
+1. Create a directory (e.g. `mymod/`)
+2. Add UI overrides under `mymod/ui/` — RML documents, RCSS stylesheets, Lua scripts, and fonts
 3. Run with `make run MOD_NAME=mymod` or `./build/vkquake -game mymod`
 
-The main menu title is automatically derived from the active game directory name.
-For a working in-repo example, run `make run MOD_NAME=ui_lab` and see `ui_lab/README.md`.
+The engine searches `<mod>/ui/` first, falling back to the base `ui/` directory. Fonts in `<mod>/ui/fonts/` are loaded automatically.
+
+For a working example, see the `ui_lab/` mod and its [README](ui_lab/README.md).
 
 ## UI Development
 
-UI files (RML/RCSS) are runtime assets — edit them and reload in-engine without rebuilding:
+UI files are runtime assets — edit and reload without rebuilding:
 
-| Command | Purpose |
+| Console Command | Purpose |
 |---------|---------|
 | `ui_reload` | Hot reload all RML + RCSS from disk |
-| `ui_reload_css` | Lightweight RCSS-only reload (preserves DOM state) |
-| `ui_debugger` | Toggle RmlUI visual debugger |
+| `ui_reload_css` | RCSS-only reload (preserves DOM state) |
+| `ui_debugger` | Toggle the RmlUI visual debugger |
 
-## Asset Compilation (optional)
+## Documentation
 
-Maps and QuakeC can be compiled from source if you have the tooling set up:
-
-```bash
-make run                                                        # Compiles QuakeC automatically if fteqcc is present
-LIBREQUAKE_SRC=~/src/LibreQuake ./scripts/compile-maps.sh -m   # Optional map compile
-```
-
-These require tools in `tools/` (git-ignored). Run the setup script to install them:
-
-```bash
-./scripts/setup-tools.sh
-```
-
-Or install manually:
-
-- **[ericw-tools](https://github.com/ericwa/ericw-tools/releases)** — `qbsp`, `vis`, `light`, and bundled `*.dylib` files
-- **FTEQCC** — QuakeC compiler
-  - Linux: [fteqcc64](https://sourceforge.net/projects/fteqw/files/FTEQCC/fteqcc64/download) (place as `tools/fteqcc64`)
-  - macOS: build from [fteqw-applesilicon](https://github.com/BryanHaley/fteqw-applesilicon) (place as `tools/fteqcc`)
-
-On Linux, ericw-tools links against system libraries instead. Install with `yay -S ericw-tools` (AUR) or build from source.
-
-> **Note:** PAK files are currently downloaded from a LibreQuake release rather than
-> built from source. LibreQuake's `build.py` can generate them with `qpakman`, but
-> that toolchain is not yet integrated into the build.
+| Guide | Contents |
+|-------|----------|
+| [RMLUI_INTEGRATION](docs/RMLUI_INTEGRATION.md) | Input handling, menu stack, data binding, event dispatch |
+| [DATA_CONTRACT](docs/DATA_CONTRACT.md) | Engine-to-UI data flow, all 50+ binding definitions |
+| [LUA_SCRIPTING](docs/LUA_SCRIPTING.md) | Lua API reference, engine bridge, example scripts |
+| [MOD_UI_GUIDE](docs/MOD_UI_GUIDE.md) | How to bundle custom UI with a mod |
+| [CVAR_BINDINGS](docs/CVAR_BINDINGS.md) | Two-way cvar sync reference |
+| [POST_PROCESS](docs/POST_PROCESS.md) | Post-process pipeline, HUD inertia physics |
 
 ## License
 
-- **Engine integration code:** GPL v2 (see [LICENSE](LICENSE))
-- **vkQuake:** GPL v2
+- **Engine + integration code:** GPL v2 (see [LICENSE](LICENSE))
 - **RmlUI:** MIT License
 - **LibreQuake:** BSD License
 
